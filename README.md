@@ -28,6 +28,7 @@ No topo do `<script>` em `index.html`:
 
 - `WHATS` – número do WhatsApp (formato `55DDDNÚMERO`)
 - `EMAIL` – e-mail de contato
+- `PREBRIEF_ENDPOINT` – URL do Apps Script que grava o pré-briefing na planilha
 - `SENHA` – senha da área interna (**só para demonstração**, veja abaixo)
 - `PKG` – textos dos pacotes Essencial, instaPRO e Premium
 - `OUTROS` – textos e etapas de Design de post e Landing page
@@ -36,7 +37,7 @@ No topo do `<script>` em `index.html`:
 
 Hoje o site é um protótipo que guarda tudo no navegador de quem usa (`localStorage`):
 
-1. **Pré-briefing**: as respostas ficam só no navegador do visitante — não chegam até o estúdio. Ligue o formulário a um serviço de envio (Formspree, Google Forms/Sheets, ou abrir o WhatsApp com a mensagem pronta) antes de publicar.
+1. **Pré-briefing**: o formulário envia as respostas para uma planilha do Google por um Apps Script. Siga [`google-apps-script/README.md`](google-apps-script/README.md) e preencha `PREBRIEF_ENDPOINT` no `index.html`. Sem essa URL, as respostas ficam só no navegador do visitante.
 2. **Área interna**: a senha fica visível no código e os dados não são compartilhados entre dispositivos. Para uso real, precisa de um back-end (login + banco de dados, ex.: Supabase/Firebase) — ou publique só a parte pública.
 3. **Google Sheets e resumo por IA** (Importar briefings): usam os recursos do claude.ai (`window.claude`). Fora do claude.ai, a tela usa respostas de exemplo e um resumo-modelo.
 

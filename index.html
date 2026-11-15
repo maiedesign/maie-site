@@ -528,6 +528,8 @@ dl.ans dt{color:var(--mut)}
 const SENHA = 'maie2026';
 const WHATS = '5591992942038';
 const EMAIL = 'maiedesignn@gmail.com';
+// URL do app da Web do Google Apps Script que grava o pré-briefing na planilha (veja google-apps-script/README.md)
+const PREBRIEF_ENDPOINT = '';
 const IMG = {logo:'img/logo.png',logoD:'img/logo-design.png',sub:'img/submarca.png',logoC:'img/logo-claro.png',subC:'img/submarca-clara.png',port:'img/portfolio.jpg'};
 
 /* ---------- utils ---------- */
@@ -885,6 +887,7 @@ function renderPre(){
     <div class="fs"><h3><small>03</small>O que você precisa?</h3><p class="hint">Pode escolher mais de uma.</p>${chips('entregas',true)}</div>
     <div class="fs"><h3><small>04</small>Investimento</h3><p class="hint">Uma faixa aproximada para eu indicar o melhor caminho.</p>${chips('invest')}</div>
     <div class="fs"><h3><small>05</small>Como conheceu o estúdio?</h3>${chips('origem')}</div>
+    <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
     <div class="pb-submit"><p>Seus dados ficam só com o estúdio e são usados para responder ao seu contato.</p><button class="pill primary" type="submit">Enviar pré-briefing <span class="arr">→</span></button></div>
   </form></div></div>`;
   const st={entregas:[]};
@@ -892,12 +895,20 @@ function renderPre(){
   $$('[data-chips]').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const k=g.dataset.chips;g.classList.remove('err');
     if(g.dataset.multi==='1'){b.classList.toggle('on');st[k]=$$('.chip.on',g).map(x=>x.dataset.v)}else{$$('.chip',g).forEach(x=>x.classList.remove('on'));b.classList.add('on');st[k]=b.dataset.v}upd()}));
   $('#pbf').addEventListener('input',upd);
+  async function enviarPre(reg,f){
+    const btn=f.querySelector('button[type=submit]'),label=btn.innerHTML;
+    if(f.website&&f.website.value){go('obrigada');return}
+    let enviado=false;
+    if(PREBRIEF_ENDPOINT){btn.disabled=true;btn.innerHTML='Enviando…';
+      try{const body=new URLSearchParams({...reg,entregas:reg.entregas.join(', ')});await fetch(PREBRIEF_ENDPOINT,{method:'POST',mode:'no-cors',body});enviado=true}catch(err){}
+      if(!enviado&&!window.claude){btn.disabled=false;btn.innerHTML=label;toast('Não consegui enviar agora. Tente de novo em instantes ou fale comigo pelo WhatsApp.','err');return}}
+    DB.prebriefings.unshift({...reg,enviado});save();go('obrigada')}
   $('#pbf').addEventListener('submit',e=>{e.preventDefault();const f=e.target;let ok=true;$$('.errmsg',f).forEach(x=>x.remove());
     ['nome','empresa','email','tel','cargo'].forEach(n=>{const i=f[n];const bad=!i.value.trim()||(n==='email'&&!/^\S+@\S+\.\S+$/.test(i.value));i.parentElement.classList.toggle('err',bad);if(bad){ok=false;i.insertAdjacentHTML('afterend',`<span class="errmsg">${n==='email'&&i.value?'E-mail inválido':'Campo obrigatório'}</span>`)}});
     ['colab','invest','origem','entregas'].forEach(k=>{const v=st[k];const bad=!v||(Array.isArray(v)&&!v.length);const g=$(`[data-chips=${k}]`);g.classList.toggle('err',bad);if(bad){ok=false;g.insertAdjacentHTML('afterend','<span class="errmsg" style="display:block;margin-top:6px">Escolha uma opção</span>')}});
     if(!ok){$('.err',f)?.scrollIntoView({behavior:'smooth',block:'center'});return}
-    DB.prebriefings.unshift({id:uid(),data:today(),nome:f.nome.value.trim(),empresa:f.empresa.value.trim(),email:f.email.value.trim(),tel:f.tel.value.trim(),cargo:f.cargo.value.trim(),site:f.site.value.trim(),ig:f.ig.value.trim(),colab:st.colab,entregas:st.entregas,invest:st.invest,origem:st.origem});
-    save();go('obrigada')});
+    const reg={id:uid(),data:today(),nome:f.nome.value.trim(),empresa:f.empresa.value.trim(),email:f.email.value.trim(),tel:f.tel.value.trim(),cargo:f.cargo.value.trim(),site:f.site.value.trim(),ig:f.ig.value.trim(),colab:st.colab,entregas:st.entregas,invest:st.invest,origem:st.origem};
+    enviarPre(reg,f)});
 }
 function renderOutros(){
   document.title='Outros serviços — Maiê Design Studio';
@@ -953,7 +964,7 @@ function renderApp(r){
   $('.side').innerHTML=`<div class="brand"><img src="${IMG.logoC}" alt="maiê"></div><div class="priv">Espaço privado</div>
   <h6>Visão geral</h6>${nav('painel','Painel')}
   <h6>Estúdio</h6>${nav('projetos','Projetos')}${nav('tarefas','Tarefas e entregas',tarefasAbertas().length)}${nav('clientes','Clientes')}${nav('agenda','Agenda')}
-  <h6>Gestão</h6>${nav('financeiro','Financeiro')}${nav('pacotes','Pacotes')}${nav('prebriefings','Pré-briefings',DB.prebriefings.filter(p=>!p.lido).length||'')}${nav('importar','Importar briefings')}
+  <h6>Gestão</h6>${nav('financeiro','Financeiro')}${nav('pacotes','Pacotes')}${nav('prebriefings','Pré-briefings',preNovos()||'')}${nav('importar','Importar briefings')}
   <h6>&nbsp;</h6>${nav('configuracoes','Configurações')}
   <div class="foot"><div class="acct"><div class="av">M</div><div><b>May</b><small>Administradora</small></div><button id="sair">Sair</button></div>
   <div class="row" style="justify-content:space-between;margin-bottom:14px"><span class="sm" style="opacity:.7">Tema escuro</span><button class="switch ${DB.config.tema==='dark'?'on':''}" id="tg" aria-label="Alternar tema"></button></div>
@@ -1288,16 +1299,48 @@ function vPacotes(V){
   $$('[data-d]',V).forEach(b=>b.onclick=()=>{const p=pac(b.dataset.d);confirmDel(p.nome,()=>{DB.pacotes=DB.pacotes.filter(x=>x!==p);save();refresh()})});
 }
 
-/* ---------- 8. Pré-briefings ---------- */
+/* ---------- 8. Pré-briefings (formulário público → Google Sheets) ---------- */
+const PB_COLS={data:/^data|carimbo|timestamp/i,id:/^id$/i,nome:/^nome/i,empresa:/empresa/i,email:/e-?mail/i,tel:/telefone|whats/i,cargo:/cargo/i,colab:/colaborador/i,entregas:/entrega/i,invest:/invest/i,origem:/origem|conheceu/i,site:/^site/i,ig:/insta/i};
+const emptyPre=()=>({id:'',titulo:'',aba:'',rows:[],fetchedAt:0,erro:null});
+const PS=()=>DB.preSheet||(DB.preSheet=emptyPre());
+const UIP={busy:false};
+async function syncPre(){const S=PS();if(!S.id||UIP.busy)return;UIP.busy=true;S.erro=null;refresh();
+  try{
+    const meta=await sheetCall('get_spreadsheet',{spreadsheetId:S.id,fields:['properties.title','sheets.properties.title']});const mo=typeof meta==='string'?JSON.parse(meta):meta;
+    S.titulo=mo?.properties?.title||'';const abas=(mo?.sheets||[]).map(x=>x.properties?.title).filter(Boolean);
+    S.aba=abas.find(a=>/pr[eé]-?briefing/i.test(a))||abas[0]||'';
+    const vals=findValues(await sheetCall('get_values',{spreadsheetId:S.id,range:S.aba?`'${S.aba.replace(/'/g,"''")}'`:'A1:Z'}))||[];
+    const head=(vals[0]||[]).map(x=>String(x??'').trim());
+    const idx={};Object.entries(PB_COLS).forEach(([k,re])=>{idx[k]=head.findIndex(h=>re.test(h))});
+    S.rows=vals.slice(1).filter(r=>r.some(c=>String(c??'').trim())).map((r,i)=>{const g=k=>idx[k]>=0?String(r[idx[k]]??'').trim():'';
+      return {id:g('id')||'s'+hash(g('data')+g('email')+i),data:sheetDate(g('data'))||today(),nome:g('nome'),empresa:g('empresa'),email:g('email'),tel:g('tel'),cargo:g('cargo'),colab:g('colab'),entregas:g('entregas').split(/\s*,\s*/).filter(Boolean),invest:g('invest'),origem:g('origem'),site:g('site'),ig:g('ig'),fonte:'planilha'}});
+    S.fetchedAt=Date.now();save();toast(`Pré-briefings sincronizados · ${S.rows.length}`);
+  }catch(e){S.erro={code:e?.code||'upstream_error',message:e?.message||''};save()}
+  UIP.busy=false;refresh()}
+function listPre(){const hid=DB.preHidden||[];const sh=PS().rows||[];const ids=new Set(sh.map(x=>x.id));
+  return [...sh,...DB.prebriefings.filter(p=>!ids.has(p.id))].filter(p=>!hid.includes(p.id)).sort((a,b)=>String(b.data).localeCompare(String(a.data)))}
+const preNovos=()=>{const seen=DB.preSeen||[];return listPre().filter(p=>!seen.includes(p.id)&&!p.lido).length};
 function vPre(V){
-  DB.prebriefings.forEach(p=>p.lido=true);save();
-  V.innerHTML=`<div class="ph"><div><h1>Pré-<em>briefings</em></h1><p>Respostas do formulário público “Vamos conversar?”</p></div><div class="acts"><a class="btn" href="#prebriefing" target="_blank">Abrir formulário ↗</a><button class="btn" id="rf">↻ Atualizar</button></div></div>
-  ${DB.prebriefings.length?`<div class="grid">${DB.prebriefings.map(p=>`<div class="card"><div class="row" style="flex-wrap:wrap;gap:18px"><div class="av" style="background:${colorOf(p.id)};border-radius:50%">${ini(p.nome)}</div><div style="flex:1;min-width:200px"><b style="font-size:17px">${h(p.empresa)}</b><div class="sm mut">${h(p.nome)} · ${h(p.cargo||'')}</div></div><div class="sm">${h(p.email)}<br>${h(p.tel)}</div><span class="sm mut">${fdl(p.data)}</span></div>
-  <details class="brief"><summary>Ver respostas</summary><dl class="ans"><dt>Entregas</dt><dd>${p.entregas.map(e=>`<span class="chipx" style="margin:0 4px 4px 0">${h(e)}</span>`).join('')}</dd><dt>Investimento</dt><dd>${h(p.invest)}</dd><dt>Cargo</dt><dd>${h(p.cargo||'—')}</dd><dt>Colaboradores</dt><dd>${h(p.colab)}</dd><dt>Como conheceu</dt><dd>${h(p.origem)}</dd><dt>Site</dt><dd>${h(p.site||'—')}</dd><dt>Instagram</dt><dd>${h(p.ig||'—')}</dd></dl>
-  <div class="row" style="margin-top:14px"><button class="btn sm pri" data-cc="${p.id}">Cadastrar como cliente</button><button class="btn sm danger" data-dp="${p.id}">Excluir</button></div></details></div>`).join('')}</div>`:'<div class="empty"><b>Nenhum pré-briefing recebido</b>Quando alguém preencher “Vamos conversar?”, aparece aqui.</div>'}`;
-  $('#rf').onclick=()=>{DB=store.get('db',DB);toast('Lista atualizada');refresh()};
-  $$('[data-cc]',V).forEach(b=>b.onclick=()=>{const p=DB.prebriefings.find(x=>x.id===b.dataset.cc);if(DB.clientes.some(c=>c.nome.toLowerCase()===p.nome.toLowerCase()))return toast('Já existe um cliente com esse nome','err');DB.clientes.push({id:uid(),nome:p.nome,empresa:p.empresa,cidade:'',tel:p.tel,email:p.email,ig:p.ig,notas:`Pré-briefing: ${p.entregas.join(', ')} · ${p.invest}`,desde:today()});save();toast('Cliente cadastrado')});
-  $$('[data-dp]',V).forEach(b=>b.onclick=()=>{const p=DB.prebriefings.find(x=>x.id===b.dataset.dp);confirmDel('o pré-briefing de '+p.empresa,()=>{DB.prebriefings=DB.prebriefings.filter(x=>x!==p);save();refresh()})});
+  const S=PS();
+  if(S.id&&MCP&&!UIP.busy&&!S.erro&&Date.now()-S.fetchedAt>2*60*1000)setTimeout(syncPre,0);
+  const L=listPre();DB.preSeen=[...new Set([...(DB.preSeen||[]),...L.map(p=>p.id)])];save();
+  const card=!S.id?`<div class="card" style="margin-bottom:18px"><h3>Planilha do pré-briefing</h3>
+      <p class="sm mut" style="margin-bottom:14px">Cole o link da planilha do Google que recebe as respostas do formulário público (a do script “Pré-briefings”). A leitura usa o conector Google Sheets da sua conta.</p>
+      <form id="pshf" class="row" style="flex-wrap:wrap"><input name="link" required placeholder="https://docs.google.com/spreadsheets/d/…" style="flex:1;min-width:260px;background:var(--bg);border:1px solid var(--ln);border-radius:999px;padding:11px 16px;color:var(--txt)"><button class="btn pri">Conectar planilha</button></form></div>`
+    :`<div class="card" style="margin-bottom:18px"><h3>Planilha do pré-briefing <span class="chipx ${S.erro?'f-Atraso':S.fetchedAt?'f-Pago':'f-Pendente'}" style="letter-spacing:0;text-transform:none"><i></i>${S.erro?'Com problema':S.fetchedAt?'Conectada':'Aguardando sincronização'}</span></h3>
+      <div class="row" style="flex-wrap:wrap;gap:12px;justify-content:space-between"><div><b style="font-size:17px">${h(S.titulo||'Planilha de pré-briefings')}</b><div class="sm mut">${(S.rows||[]).length} resposta(s)${S.aba?' · aba “'+h(S.aba)+'”':''} · sincronizada ${agoTxt(S.fetchedAt)} · <a class="link" href="https://docs.google.com/spreadsheets/d/${encodeURIComponent(S.id)}/edit" target="_blank" rel="noopener">abrir no Google Sheets ↗</a></div></div>
+      <div class="row"><button class="btn pri" id="psync" ${UIP.busy?'disabled':''}>${UIP.busy?'Sincronizando…':'↻ Sincronizar'}</button><button class="btn sm" id="ptroca">Trocar planilha</button></div></div>
+      ${S.erro?`<div class="alert" style="margin-top:14px;background:color-mix(in srgb,#C0392B 9%,var(--panel));border-color:color-mix(in srgb,#C0392B 35%,transparent)"><span class="ico">⚠️</span><div><b>Não consegui ler a planilha</b><span class="sm">${h(errMsg(S.erro))}</span></div></div>`:''}</div>`;
+  V.innerHTML=`<div class="ph"><div><h1>Pré-<em>briefings</em></h1><p>Respostas do formulário público “Vamos conversar?”</p></div><div class="acts"><a class="btn" href="#prebriefing" target="_blank">Abrir formulário ↗</a></div></div>
+  ${card}
+  ${L.length?`<div class="grid">${L.map(p=>`<div class="card"><div class="row" style="flex-wrap:wrap;gap:18px"><div class="av" style="background:${colorOf(p.id)};border-radius:50%">${ini(p.nome)}</div><div style="flex:1;min-width:200px"><b style="font-size:17px">${h(p.empresa||'—')}</b><div class="sm mut">${h(p.nome)}${p.cargo?' · '+h(p.cargo):''}</div></div><div class="sm">${h(p.email)}<br>${h(p.tel)}</div><span class="sm mut" style="text-align:right">${fdl(p.data)}<br><span class="chipx" style="margin-top:4px">${p.fonte==='planilha'?'planilha':'este navegador'}</span></span></div>
+  <details class="brief"><summary>Ver respostas</summary><dl class="ans"><dt>Entregas</dt><dd>${(p.entregas||[]).map(e=>`<span class="chipx" style="margin:0 4px 4px 0">${h(e)}</span>`).join('')||'—'}</dd><dt>Investimento</dt><dd>${h(p.invest||'—')}</dd><dt>Cargo</dt><dd>${h(p.cargo||'—')}</dd><dt>Colaboradores</dt><dd>${h(p.colab||'—')}</dd><dt>Como conheceu</dt><dd>${h(p.origem||'—')}</dd><dt>Site</dt><dd>${h(p.site||'—')}</dd><dt>Instagram</dt><dd>${h(p.ig||'—')}</dd></dl>
+  <div class="row" style="margin-top:14px"><button class="btn sm pri" data-cc="${p.id}">Cadastrar como cliente</button><button class="btn sm danger" data-dp="${p.id}">${p.fonte==='planilha'?'Ocultar':'Excluir'}</button></div></details></div>`).join('')}</div>`:'<div class="empty"><b>Nenhum pré-briefing recebido</b>Quando alguém preencher “Vamos conversar?”, aparece aqui.</div>'}`;
+  const f=$('#pshf');if(f)f.onsubmit=e=>{e.preventDefault();const id=sheetId(f.link.value);if(!id)return toast('Link de planilha inválido','err');DB.preSheet={...emptyPre(),id};save();syncPre()};
+  $('#psync')&&($('#psync').onclick=syncPre);
+  $('#ptroca')&&($('#ptroca').onclick=()=>modal('Trocar planilha?','<p>A conexão atual será removida. Nada é apagado da planilha.</p>',()=>{DB.preSheet=emptyPre();save();refresh()},'Trocar',{danger:true}));
+  $$('[data-cc]',V).forEach(b=>b.onclick=()=>{const p=L.find(x=>x.id===b.dataset.cc);if(findCli(p.nome))return toast('Já existe um cliente com esse nome','err');DB.clientes.push({id:uid(),nome:p.nome,empresa:p.empresa,cidade:'',tel:p.tel,email:p.email,ig:p.ig,site:p.site,cargo:p.cargo,notas:`Pré-briefing: ${(p.entregas||[]).join(', ')} · ${p.invest}`,desde:today()});save();toast('Cliente cadastrado')});
+  $$('[data-dp]',V).forEach(b=>b.onclick=()=>{const p=L.find(x=>x.id===b.dataset.dp);if(p.fonte==='planilha'){DB.preHidden=[...(DB.preHidden||[]),p.id];save();toast('Ocultado (continua na planilha)');return refresh()}confirmDel('o pré-briefing de '+(p.empresa||p.nome),()=>{DB.prebriefings=DB.prebriefings.filter(x=>x!==p);save();refresh()})});
 }
 
 /* ---------- 9. Importar briefings ---------- */
