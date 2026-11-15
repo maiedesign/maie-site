@@ -608,7 +608,7 @@ const FORMS_DEMO=[];
    ========================================================= */
 const SHEETS='Google Sheets';
 let MCP=null,SAMPLE=null;
-(async()=>{try{if(window.claude&&typeof claude.use==='function'){const [m,s]=await Promise.all([claude.use('mcp').catch(()=>null),claude.use('sample').catch(()=>null)]);MCP=m;SAMPLE=s}}catch(e){}
+const CAP=(async()=>{try{if(window.claude&&typeof claude.use==='function'){const [m,s]=await Promise.all([claude.use('mcp').catch(()=>null),claude.use('sample').catch(()=>null)]);MCP=m;SAMPLE=s}}catch(e){}
   if($('.app')&&/importar|briefings|clientes/.test(location.hash))refresh()})();
 const emptySheet=()=>({id:'',aba:'',abas:[],titulo:'',header:[],rows:[],cols:null,fetchedAt:0,erro:null});
 const SH=()=>DB.sheet||(DB.sheet=emptySheet());
@@ -651,9 +651,24 @@ const ERRS={needs_reauth:'A conexão com o Google expirou. Reconecte o Google Sh
   consent_required:'Falta autorizar o acesso ao Google Sheets. Clique em Sincronizar e escolha “Permitir”.',
   blocked_by_policy:'A política da sua organização bloqueia o Google Sheets nesta página.',
   server_unavailable:'O Google Sheets não respondeu agora. Tente sincronizar de novo em instantes.',
-  nomcp:'A sincronização com o Google Sheets funciona com a página aberta no claude.ai (logada na sua conta).'};
+  nomcp:'Fora do claude.ai, a leitura da planilha passa pelo seu script do Google. Cole o código de acesso em Configurações → “Planilhas fora do claude.ai” e sincronize de novo.',
+  token:'O código de acesso das planilhas não confere. Confira em Configurações → “Planilhas fora do claude.ai” (é o código gerado pela função gerarCodigo no Apps Script).',
+  script:'O script do Google não respondeu como esperado. Atualize o código do Apps Script e publique uma nova versão (Implantar → Gerenciar implantações → Editar → Nova versão).',
+  rede:'Não consegui falar com o script do Google agora. Confira a internet e tente de novo.'};
 const errMsg=e=>e.code==='tool_error'?`A planilha não respondeu: confira o link, o nome da aba e se a sua conta Google tem acesso a ela.${e.message?' ('+String(e.message).slice(0,140)+')':''}`:(ERRS[e.code]||ERRS[['not_granted','capability_disabled','capability_removed'].includes(e.code)?'nomcp':'']||'Não foi possível ler a planilha agora. Tente de novo.');
-async function sheetCall(tool,input,retry=true){if(!MCP)throw {code:'not_granted'};try{const r=await MCP.callTool(SHEETS,tool,input,{cache:false});return r.payload??r}catch(e){if(retry&&e&&e.retryable&&tool.startsWith('get')){await new Promise(r=>setTimeout(r,(e.retryAfterMs||800)+Math.random()*600));return sheetCall(tool,input,false)}throw e}}
+const canApps=()=>!!(PREBRIEF_ENDPOINT&&DB.config.gsToken);
+const podeLer=()=>!!MCP||canApps();
+/* Leitura pelo Apps Script do estúdio (usada no seu domínio, fora do claude.ai) */
+async function appsCall(tool,input){
+  const q=new URLSearchParams({acao:tool==='get_spreadsheet'?'meta':'valores',id:input.spreadsheetId,token:DB.config.gsToken});
+  if(tool==='get_values'){const m=String(input.range||'').match(/^'(.*)'$/);if(m)q.set('aba',m[1].replace(/''/g,"'"));}
+  let r;try{r=await fetch(PREBRIEF_ENDPOINT+'?'+q.toString(),{method:'GET',redirect:'follow'})}catch(e){throw {code:'rede'}}
+  let j;try{j=await r.json()}catch(e){throw {code:'script'}}
+  if(j&&j.ok===false){throw {code:j.erro==='token'?'token':'tool_error',message:j.erro||''}}
+  if(j&&j.info&&!j.values&&!j.sheets)throw {code:'script'};
+  return j}
+async function sheetCall(tool,input,retry=true){if(!MCP&&window.claude)await Promise.race([CAP,new Promise(r=>setTimeout(r,11000))]);
+  if(!MCP){if(canApps())return appsCall(tool,input);throw {code:'not_granted'}}try{const r=await MCP.callTool(SHEETS,tool,input,{cache:false});return r.payload??r}catch(e){if(retry&&e&&e.retryable&&tool.startsWith('get')){await new Promise(r=>setTimeout(r,(e.retryAfterMs||800)+Math.random()*600));return sheetCall(tool,input,false)}throw e}}
 async function syncSheet(){const S=SH();if(!S.id||UIS.busy)return;UIS.busy=true;S.erro=null;refresh();
   try{
     if(!S.abas.length||!S.aba){const meta=await sheetCall('get_spreadsheet',{spreadsheetId:S.id,fields:['properties.title','sheets.properties.title']});const mo=typeof meta==='string'?JSON.parse(meta):meta;
@@ -1293,7 +1308,7 @@ function listPre(){const hid=DB.preHidden||[];const sh=PS().rows||[];const ids=n
 const preNovos=()=>{const seen=DB.preSeen||[];return listPre().filter(p=>!seen.includes(p.id)&&!p.lido).length};
 function vPre(V){
   const S=PS();
-  if(S.id&&MCP&&!UIP.busy&&!S.erro&&Date.now()-S.fetchedAt>2*60*1000)setTimeout(syncPre,0);
+  if(S.id&&podeLer()&&!UIP.busy&&!S.erro&&Date.now()-S.fetchedAt>2*60*1000)setTimeout(syncPre,0);
   const L=listPre();DB.preSeen=[...new Set([...(DB.preSeen||[]),...L.map(p=>p.id)])];save();
   const card=!S.id?`<div class="card" style="margin-bottom:18px"><h3>Planilha do pré-briefing</h3>
       <p class="sm mut" style="margin-bottom:14px">Cole o link da planilha do Google que recebe as respostas do formulário público (a do script “Pré-briefings”). A leitura usa o conector Google Sheets da sua conta.</p>
@@ -1346,7 +1361,7 @@ function mapHTML(){
 }
 function vImportar(V){
   const S=SH();
-  if(S.id&&MCP&&S.fetchedAt&&!S.erro&&!UIS.busy&&Date.now()-S.fetchedAt>10*60*1000)setTimeout(syncSheet,0);
+  if(S.id&&podeLer()&&S.fetchedAt&&!S.erro&&!UIS.busy&&Date.now()-S.fetchedAt>10*60*1000)setTimeout(syncSheet,0);
   const di=DB.config.dataForms;
   const F=getForms();
   const resp=di?F.filter(r=>!r.data||r.data>=di):[];
@@ -1398,6 +1413,9 @@ function vConfig(V){
    <div class="card"><h3>Alertas de prazo</h3><p class="sm mut" style="margin-bottom:14px">Antecedência usada nos avisos do painel e no filtro “Próximos dias”.</p><div class="row"><input type="range" min="1" max="60" value="${C.alerta}" id="al" style="flex:1;accent-color:var(--acc)"><b id="alv" style="min-width:70px;text-align:right">${C.alerta} dia${C.alerta>1?'s':''}</b></div></div>
    <div class="card"><h3>Aparência</h3><div class="row" style="justify-content:space-between"><span>Tema escuro <span class="sm mut">(vinho e dourado)</span></span><button class="switch ${C.tema==='dark'?'on':''}" id="tm"></button></div></div>
    <div class="card"><h3>Dados do estúdio</h3><p class="sm mut" style="margin-bottom:14px">Apaga clientes, projetos, financeiro e pré-briefings guardados neste navegador. Os pacotes voltam ao padrão.</p><div class="row"><button class="btn danger" id="reset">Apagar todos os dados</button></div></div>
+   <div class="card"><h3>Planilhas fora do claude.ai</h3><p class="sm mut" style="margin-bottom:12px">No seu domínio, a área interna lê as planilhas pelo seu script do Google. Cole aqui o código gerado pela função <b>gerarCodigo</b> do Apps Script. Ele fica guardado só neste navegador.</p>
+    <form id="gstf" class="row" style="flex-wrap:wrap"><input name="tok" type="password" autocomplete="off" placeholder="${C.gsToken?'•••••••• (código salvo)':'Código de acesso'}" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--ln);border-radius:999px;padding:10px 16px;color:var(--txt)"><button class="btn pri">Salvar</button>${C.gsToken?'<button type="button" class="btn sm danger" id="gstx">Remover</button>':''}</form>
+    <p class="sm" style="margin-top:10px">${MCP?'<span class="chipx f-Pago"><i></i>Conector do claude.ai ativo nesta página</span>':C.gsToken?'<span class="chipx f-Pago"><i></i>Código salvo: leitura pelo script</span>':'<span class="chipx f-Pendente"><i></i>Sem código: a leitura só funciona no claude.ai</span>'}</p></div>
    <div class="card"><h3>Planilha de briefings</h3><p class="sm">${SH().id?`Conectada: <b>${h(SH().titulo||'planilha')}</b> · sincronizada ${agoTxt(SH().fetchedAt)}`:'Nenhuma planilha conectada.'}</p><a class="btn sm" href="#importar" style="margin-top:12px">Gerenciar em Importar briefings →</a></div>
    <div class="card"><h3>Acesso</h3><div class="row" style="justify-content:space-between"><span class="health"><i></i>Sistema funcionando</span><button class="btn" id="out">Sair do estúdio</button></div></div>
    <div class="card"><h3>Senha de acesso</h3>
@@ -1413,6 +1431,8 @@ function vConfig(V){
   const al=$('#al');al.oninput=()=>{$('#alv').textContent=al.value+' dia'+(al.value>1?'s':'')};al.onchange=()=>{C.alerta=+al.value;save();toast('Antecedência salva');refresh()};
   $('#tm').onclick=()=>{C.tema=C.tema==='dark'?'light':'dark';save();refresh()};
   $('#out').onclick=logout;
+  $('#gstf').onsubmit=e=>{e.preventDefault();const v=e.target.tok.value.trim();if(!v)return toast('Cole o código de acesso','err');C.gsToken=v;if(DB.sheet)DB.sheet.erro=null;if(DB.preSheet)DB.preSheet.erro=null;save();toast('Código salvo');refresh()};
+  $('#gstx')&&($('#gstx').onclick=()=>{delete C.gsToken;save();toast('Código removido');refresh()});
   $('#pwf').onsubmit=async e=>{e.preventDefault();const f=e.target;
     let atualOk=false;try{atualOk=(await sha256(f.atual.value))===(C.senhaHash||SENHA_HASH)}catch(err){}
     if(!atualOk)return toast('Senha atual incorreta','err');
@@ -1422,7 +1442,7 @@ function vConfig(V){
     $('#pwinfo').innerHTML=`<div class="alert" style="margin-top:14px"><span class="ico">🔑</span><div><b>Senha alterada neste navegador</b><span class="sm">Para valer também nos outros aparelhos e no site publicado, o código abaixo precisa entrar no site (é só um código embaralhado, não a senha). Copie e me envie — ou cole em <code>SENHA_HASH</code> no index.html.</span>
       <div class="row" style="margin-top:10px;flex-wrap:wrap"><code style="font-size:12px;word-break:break-all;background:var(--panel2);padding:8px 10px;border-radius:10px;flex:1">${hh}</code><button class="btn sm" id="cphash">Copiar código</button></div></div></div>`;
     $('#cphash').onclick=()=>navigator.clipboard?.writeText(hh).then(()=>toast('Código copiado')).catch(()=>toast('Selecione e copie manualmente','err'))};
-  $('#reset').onclick=()=>modal('Apagar todos os dados?','<p>Clientes, projetos, tarefas, financeiro, pré-briefings e briefings importados deste navegador serão apagados. A senha, o tema e as planilhas conectadas continuam. Não dá para desfazer.</p>',()=>{const keep={senhaHash:C.senhaHash,tema:C.tema,alerta:C.alerta},sh=DB.sheet,ps=DB.preSheet;DB=seed();Object.assign(DB.config,keep);if(sh)DB.sheet=sh;if(ps)DB.preSheet=ps;save();toast('Dados apagados');refresh()},'Apagar tudo',{danger:true});
+  $('#reset').onclick=()=>modal('Apagar todos os dados?','<p>Clientes, projetos, tarefas, financeiro, pré-briefings e briefings importados deste navegador serão apagados. A senha, o tema e as planilhas conectadas continuam. Não dá para desfazer.</p>',()=>{const keep={senhaHash:C.senhaHash,gsToken:C.gsToken,tema:C.tema,alerta:C.alerta},sh=DB.sheet,ps=DB.preSheet;DB=seed();Object.assign(DB.config,keep);if(sh)DB.sheet=sh;if(ps)DB.preSheet=ps;save();toast('Dados apagados');refresh()},'Apagar tudo',{danger:true});
   $$('[data-up]',V).forEach(i=>i.onchange=()=>{const f=i.files[0];if(!f)return;if(f.size>8*1024*1024)return toast('Imagem acima de 8 MB','err');if(!/image\/(jpeg|png|webp|gif)/.test(f.type))return toast('Formato não suportado','err');
     const rd=new FileReader();rd.onload=()=>{const img=new Image();img.onload=()=>{const cv=document.createElement('canvas'),w=Math.min(1200,img.width);cv.width=w;cv.height=img.height*w/img.width;cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);C.capas[i.dataset.up]=cv.toDataURL('image/jpeg',.82);save();toast('Imagem enviada');refresh()};img.src=rd.result};rd.readAsDataURL(f)});
   $$('[data-rm]',V).forEach(b=>b.onclick=()=>{delete C.capas[b.dataset.rm];save();toast('Imagem removida');refresh()});

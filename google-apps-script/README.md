@@ -26,7 +26,18 @@ A primeira resposta cria a aba **"Pré-briefings"** com o cabeçalho:
 
 `Data · ID · Nome · Empresa · E-mail · Telefone · Cargo · Colaboradores · Entregas · Investimento · Origem · Site · Instagram`
 
-## 3. Ver as respostas na área interna
+## 3. Liberar a leitura das planilhas no seu domínio
+
+No claude.ai, a área interna lê as planilhas pelo conector Google Sheets. No seu domínio (Vercel), quem lê é este mesmo script. Para isso:
+
+1. No editor do Apps Script, escolha a função **gerarCodigo** no menu do topo e clique em **Executar**. Autorize se o Google pedir (o script passa a poder abrir as planilhas que você indicar).
+2. Abra **Execuções** (ou o registro de execução) e copie o **código de acesso** que apareceu.
+3. Publique uma nova versão: **Implantar → Gerenciar implantações → Editar → Versão: Nova versão → Implantar** (a URL continua a mesma).
+4. No site, na área interna, vá em **Configurações → Planilhas fora do claude.ai**, cole o código e salve. Ele fica guardado só naquele navegador; repita em cada aparelho que usar.
+
+O código funciona como uma senha para ler as planilhas: não compartilhe. Para trocar, rode **gerarCodigo** de novo e cole o novo código no site.
+
+## 4. Ver as respostas na área interna
 
 Em **Pré-briefings** (área interna, aberta no claude.ai), cole o link da planilha em "Planilha do pré-briefing" e clique em **Sincronizar**. A lista junta as respostas da planilha com as que estiverem salvas no navegador.
 

@@ -35,8 +35,40 @@ function doPost(e) {
   }
 }
 
-function doGet() {
-  return resposta({ ok: true, info: 'Endpoint do pré-briefing do Maiê Design Studio' });
+/**
+ * Leitura das planilhas pela área interna do site (no seu domínio).
+ * Protegida pelo código de acesso salvo nas propriedades do script (veja gerarCodigo).
+ *   ?acao=meta&id=PLANILHA&token=CODIGO            → nome da planilha e das abas
+ *   ?acao=valores&id=PLANILHA&aba=ABA&token=CODIGO  → todas as linhas da aba
+ */
+function doGet(e) {
+  var p = (e && e.parameter) || {};
+  if (!p.acao) return resposta({ ok: true, info: 'Endpoint do pré-briefing do Maiê Design Studio' });
+  var codigo = PropertiesService.getScriptProperties().getProperty('TOKEN');
+  if (!codigo || p.token !== codigo) return resposta({ ok: false, erro: 'token' });
+  try {
+    var ss = SpreadsheetApp.openById(p.id);
+    if (p.acao === 'meta') {
+      return resposta({
+        properties: { title: ss.getName() },
+        sheets: ss.getSheets().map(function (s) { return { properties: { title: s.getName() } }; })
+      });
+    }
+    if (p.acao === 'valores') {
+      var aba = (p.aba && ss.getSheetByName(p.aba)) || ss.getSheets()[0];
+      return resposta({ range: aba.getName(), values: aba.getDataRange().getDisplayValues() });
+    }
+    return resposta({ ok: false, erro: 'acao' });
+  } catch (err) {
+    return resposta({ ok: false, erro: 'Não consegui abrir a planilha: ' + err.message });
+  }
+}
+
+/** Rode esta função UMA vez no editor para criar o código de acesso (aparece no registro de execução). */
+function gerarCodigo() {
+  var codigo = Utilities.getUuid().replace(/-/g, '');
+  PropertiesService.getScriptProperties().setProperty('TOKEN', codigo);
+  Logger.log('Código de acesso: ' + codigo);
 }
 
 // Evita que um texto enviado vire fórmula na planilha e limita o tamanho.
