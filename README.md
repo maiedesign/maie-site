@@ -51,3 +51,8 @@ Hoje o site é um protótipo que guarda tudo no navegador de quem usa (`localSto
 
 Paleta vinho `#5B1531`, magenta `#AD2159`, ameixa `#7B3A5E`, rosa `#F2D8DB`, dourado `#C59A55`.
 Fontes: Instrument Serif e DM Sans (Google Fonts).
+
+
+## Pré-briefing por chat
+
+O formulário foi substituído por um chat flutuante (🌸) com diálogos fixos em JavaScript — sem LLM nem APIs externas. Ao confirmar, os dados seguem para a planilha (Apps Script) e para a tela *Pré-briefings* da área privada. Os links `#prebriefing` abrem o chat.

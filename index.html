@@ -514,6 +514,53 @@ dl.ans dt{color:var(--mut)}
 }
 @media (max-width:560px){ .recog,.steps{grid-template-columns:1fr} .rc{min-height:220px} }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}.hero h1 .ln span{transform:none}}
+
+/* chat flutuante */
+.mch{position:fixed;right:clamp(14px,2.4vw,28px);bottom:clamp(14px,2.4vw,28px);z-index:80;font-family:var(--sans)}
+.mch[hidden]{display:none}
+.mch-fab{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--magenta),var(--vinho));color:#fff;font-size:30px;line-height:1;display:grid;place-items:center;box-shadow:0 16px 36px -10px rgba(91,21,49,.7);transition:transform .25s;position:relative;margin-left:auto}
+.mch-fab:hover{transform:scale(1.07) rotate(-6deg)}
+.mch-fab::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--magenta);animation:mchp 2.6s ease-out infinite}
+.mch.open .mch-fab::after{display:none}
+@keyframes mchp{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.55);opacity:0}}
+.mch-tip{position:absolute;right:76px;bottom:14px;background:#fff;color:var(--vinho);border:1px solid var(--line);border-radius:16px 16px 4px 16px;padding:10px 16px;font-size:14px;font-weight:600;white-space:nowrap;box-shadow:0 10px 28px -12px rgba(91,21,49,.4);cursor:pointer}
+.mch-tip[hidden]{display:none}
+.mch-win{position:absolute;right:0;bottom:78px;width:min(390px,calc(100vw - 28px));height:min(620px,calc(100vh - 130px));background:var(--creme);border-radius:26px;box-shadow:0 30px 80px -20px rgba(62,13,33,.55);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);animation:mchin .35s cubic-bezier(.2,.8,.2,1)}
+.mch-win[hidden]{display:none}
+@keyframes mchin{from{opacity:0;transform:translateY(16px) scale(.97)}}
+.mch-win header{background:linear-gradient(135deg,var(--vinho),var(--magenta));color:#fff;padding:16px 18px 20px;display:flex;align-items:center;gap:12px;position:relative}
+.mch-av{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:21px}
+.mch-win header b{display:block;font-size:15px}
+.mch-win header small{font-size:12px;opacity:.85}
+.mch-x{margin-left:auto;color:#fff;font-size:26px;line-height:1;width:34px;height:34px;border-radius:50%}
+.mch-x:hover{background:rgba(255,255,255,.18)}
+.mch-bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.2)}
+.mch-bar i{display:block;height:100%;width:0;background:var(--dourado);transition:width .5s}
+.mch-log{flex:1;overflow-y:auto;padding:18px 16px;display:flex;flex-direction:column;gap:9px;scroll-behavior:smooth}
+.mch-m{max-width:84%;padding:11px 15px;font-size:15px;line-height:1.45;border-radius:18px;animation:mchm .3s ease;overflow-wrap:anywhere}
+@keyframes mchm{from{opacity:0;transform:translateY(8px)}}
+.mch-m.bot{background:#fff;color:var(--tinta);border:1px solid var(--line);border-bottom-left-radius:5px;align-self:flex-start}
+.mch-m.user{background:var(--magenta);color:#fff;border-bottom-right-radius:5px;align-self:flex-end}
+.mch-m.code{max-width:100%;width:100%;background:var(--vinho2);border:0;padding:0}
+.mch-m.code pre{margin:0;padding:14px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--rosa);white-space:pre-wrap;word-break:break-word;max-height:230px;overflow:auto}
+.mch-m.typing{display:flex;gap:5px;padding:14px 16px}
+.mch-m.typing i{width:7px;height:7px;border-radius:50%;background:var(--ameixa);opacity:.4;animation:mchd 1s infinite}
+.mch-m.typing i:nth-child(2){animation-delay:.15s}.mch-m.typing i:nth-child(3){animation-delay:.3s}
+@keyframes mchd{50%{opacity:1;transform:translateY(-3px)}}
+.mch-opts{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px}
+.mch-opts:not(:empty){padding-bottom:12px}
+.mch-chip{border:1.5px solid var(--magenta);color:var(--magenta);background:#fff;border-radius:999px;padding:9px 16px;font-size:14px;font-weight:600;transition:all .2s}
+.mch-chip:hover,.mch-chip.on{background:var(--magenta);color:#fff}
+.mch-chip.go{background:var(--vinho);border-color:var(--vinho);color:#fff}
+.mch-chip.go:disabled{opacity:.4;cursor:not-allowed}
+.mch-chip.ghost{border-color:var(--line);color:var(--muted)}
+.mch-chip.ghost:hover{background:var(--rosa2);color:var(--vinho)}
+.mch-in{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:#fff}
+.mch-in input{flex:1;border:1px solid var(--line);border-radius:999px;padding:12px 16px;font-size:15px;outline:none;background:var(--creme);min-width:0}
+.mch-in input:focus{border-color:var(--magenta);box-shadow:0 0 0 3px rgba(173,33,89,.12)}
+.mch-in button{width:44px;height:44px;border-radius:50%;background:var(--magenta);color:#fff;display:grid;place-items:center;flex:none}
+.mch-in button:disabled,.mch-in input:disabled{opacity:.5}
+@media(max-width:520px){.mch-win{position:fixed;inset:0;width:auto;height:auto;border-radius:0;border:0}.mch.open .mch-fab{display:none}.mch-tip{right:72px}}
 </style>
 </head>
 <body>
@@ -754,8 +801,9 @@ function route(){
   const base=r.split('-')[0];
   window.scrollTo(0,0);
   document.title = 'Maiê Design Studio';
+  chatSync(r);
   if(r==='propostas'||r==='')return renderPublic();
-  if(r==='prebriefing')return renderPre();
+  if(r==='prebriefing'){history.replaceState(null,'',location.pathname+location.search+'#propostas');renderPublic();chatSync('propostas');openChat();return}
   if(r==='outros-servicos')return renderOutros();
   if(r==='obrigada')return renderThanks();
   if(r==='entrar')return authed()?go('painel'):renderLogin();
@@ -837,8 +885,8 @@ function renderPublic(){
     <div class="pb-track" aria-hidden="true"><div class="pb-line"><i></i></div><div class="pb-pts"><span><em></em>Briefing</span><span><em></em>Imersão</span><span><em></em>Criação</span><span class="end"><em></em>Apresentação</span></div></div></div>
 </section>
 <section class="final reveal"><div class="orb"></div><div class="orb r2"></div>
-  <h2>Vamos criar <em>a sua marca?</em></h2><p>Me conta sobre você e o seu negócio no pré-briefing — leva uns 3 minutos.</p>
-  <div class="cta-stack"><a class="pill wa" href="#prebriefing">Preencher o pré-briefing <span class="arr">→</span></a>
+  <h2>Vamos criar <em>a sua marca?</em></h2><p>Me conta sobre você e o seu negócio em um chat rápido — leva uns 3 minutos.</p>
+  <div class="cta-stack"><a class="pill wa" href="#prebriefing">Conversar agora <span class="arr">→</span></a>
   <span class="note">ou, se preferir, fale direto comigo</span>
   <a class="pill wa2" href="${waLink()}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.4c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l2 1c.3.1.5.2.5.3.1.1.1.6-.2 1.2z"/></svg>Chamar no WhatsApp</a></div>
 </section>
@@ -857,45 +905,117 @@ function bindPublic(){
   $$('[data-count]').forEach(el=>cio.observe(el));
 }
 
-/* ---------- Pré-briefing ---------- */
-const PB={entregas:['Identidade visual','Análise de perfil','Design de post','Landing page','Design de interface'],invest:['R$ 500+','R$ 1.500+','R$ 3.000+','R$ 5.000+'],colab:['Só eu','2–5','6–10','11–25','26–50','51 ou mais'],origem:['Instagram','Indicação','Google','Behance','Já conhecia o estúdio','Outro']};
-function renderPre(){
-  document.title='Vamos conversar? — Maiê Design Studio';
-  const chips=(k,multi)=>`<div class="chips" data-chips="${k}" data-multi="${multi?1:0}">${PB[k].map(o=>`<button type="button" class="chip" data-v="${h(o)}">${h(o)}</button>`).join('')}</div>`;
-  $('#root').innerHTML=`<div class="pub">${pubNav()}<div class="pb">
-  <aside class="pb-side"><span class="eyebrow">Pré-briefing</span><h1>Vamos <em>conversar?</em></h1><p>Me conta um pouco sobre você e o seu negócio. Leva uns 3 minutos e me ajuda a chegar na nossa conversa já com ideias.</p>
-  <img class="mono" src="${IMG.subC}" alt=""><div class="pb-prog"><span id="pbp">0 de 9 respostas obrigatórias</span><div class="bar"><i id="pbbar"></i></div></div></aside>
-  <form class="pb-form" id="pbf" novalidate>
-    <div class="fs"><h3><small>01</small>Sobre você</h3><p class="hint">Para eu saber com quem estou falando.</p>
-      <div class="grid2">${fld('nome','Nome','','text','required')}${fld('empresa','Empresa','','text','required')}${fld('email','E-mail','','email','required')}${fld('tel','Telefone / WhatsApp','','tel','required')}${fld('cargo','Cargo','','text','required placeholder="Ex.: Fundadora, Sócio, Marketing"')}</div></div>
-    <div class="fs"><h3><small>02</small>Seu negócio</h3><p class="hint">Quantas pessoas trabalham com você?</p>${chips('colab')}
-      <div class="grid2" style="margin-top:18px">${fld('site','Site <span class="opt">(opcional)</span>','','text','placeholder="seusite.com.br"')}${fld('ig','Instagram <span class="opt">(opcional)</span>','','text','placeholder="@seuperfil"')}</div></div>
-    <div class="fs"><h3><small>03</small>O que você precisa?</h3><p class="hint">Pode escolher mais de uma.</p>${chips('entregas',true)}</div>
-    <div class="fs"><h3><small>04</small>Investimento</h3><p class="hint">Uma faixa aproximada para eu indicar o melhor caminho.</p>${chips('invest')}</div>
-    <div class="fs"><h3><small>05</small>Como conheceu o estúdio?</h3>${chips('origem')}</div>
-    <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
-    <div class="pb-submit"><p>Seus dados ficam só com o estúdio e são usados para responder ao seu contato.</p><button class="pill primary" type="submit">Enviar pré-briefing <span class="arr">→</span></button></div>
-  </form></div></div>`;
-  const st={entregas:[]};
-  const upd=()=>{const f=$('#pbf');const req=['nome','empresa','email','tel','cargo'].filter(n=>f[n].value.trim()).length+['colab','invest','origem'].filter(k=>st[k]).length+(st.entregas.length?1:0);$('#pbp').textContent=`${req} de 9 respostas obrigatórias`;$('#pbbar').style.width=(req/9*100)+'%'};
-  $$('[data-chips]').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const k=g.dataset.chips;g.classList.remove('err');
-    if(g.dataset.multi==='1'){b.classList.toggle('on');st[k]=$$('.chip.on',g).map(x=>x.dataset.v)}else{$$('.chip',g).forEach(x=>x.classList.remove('on'));b.classList.add('on');st[k]=b.dataset.v}upd()}));
-  $('#pbf').addEventListener('input',upd);
-  async function enviarPre(reg,f){
-    const btn=f.querySelector('button[type=submit]'),label=btn.innerHTML;
-    if(f.website&&f.website.value){go('obrigada');return}
-    let enviado=false;
-    if(PREBRIEF_ENDPOINT){btn.disabled=true;btn.innerHTML='Enviando…';
-      try{const body=new URLSearchParams({...reg,entregas:reg.entregas.join(', ')});await fetch(PREBRIEF_ENDPOINT,{method:'POST',mode:'no-cors',body});enviado=true}catch(err){}
-      if(!enviado&&!window.claude){btn.disabled=false;btn.innerHTML=label;toast('Não consegui enviar agora. Tente de novo em instantes ou fale comigo pelo WhatsApp.','err');return}}
-    DB.prebriefings.unshift({...reg,enviado});save();go('obrigada')}
-  $('#pbf').addEventListener('submit',e=>{e.preventDefault();const f=e.target;let ok=true;$$('.errmsg',f).forEach(x=>x.remove());
-    ['nome','empresa','email','tel','cargo'].forEach(n=>{const i=f[n];const bad=!i.value.trim()||(n==='email'&&!/^\S+@\S+\.\S+$/.test(i.value));i.parentElement.classList.toggle('err',bad);if(bad){ok=false;i.insertAdjacentHTML('afterend',`<span class="errmsg">${n==='email'&&i.value?'E-mail inválido':'Campo obrigatório'}</span>`)}});
-    ['colab','invest','origem','entregas'].forEach(k=>{const v=st[k];const bad=!v||(Array.isArray(v)&&!v.length);const g=$(`[data-chips=${k}]`);g.classList.toggle('err',bad);if(bad){ok=false;g.insertAdjacentHTML('afterend','<span class="errmsg" style="display:block;margin-top:6px">Escolha uma opção</span>')}});
-    if(!ok){$('.err',f)?.scrollIntoView({behavior:'smooth',block:'center'});return}
-    const reg={id:uid(),data:today(),nome:f.nome.value.trim(),empresa:f.empresa.value.trim(),email:f.email.value.trim(),tel:f.tel.value.trim(),cargo:f.cargo.value.trim(),site:f.site.value.trim(),ig:f.ig.value.trim(),colab:st.colab,entregas:st.entregas,invest:st.invest,origem:st.origem};
-    enviarPre(reg,f)});
-}
+/* ---------- Chat de pré-briefing (diálogos fixos em JS, sem APIs externas) ---------- */
+const CH={
+ colab:['Só eu','2-5','6-10','11-25','26-50','51 ou mais'],
+ serv:['Identidade visual','Design de post','Landing page'],
+ invest:['R$ 500+','R$ 1.500+','R$ 3.000+','R$ 5.000+'],
+ origem:['Instagram','Indicação','Google','Behance','Já conhecia o estúdio','Outro']};
+const chNorm=s=>String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[–—]/g,'-').replace(/\s+/g,' ').trim();
+const chOpt=(v,list)=>{const n=chNorm(v);return list.find(o=>chNorm(o)===n)||list.find(o=>chNorm(o).replace(/[^a-z0-9]/g,'')===n.replace(/[^a-z0-9]/g,'')&&n.length>1)};
+const chTxt=(min,msg)=>v=>v.length>=min&&v.length<=120?{v}:{e:msg};
+const CH_STEPS=[
+ {k:'start',type:'single',opts:['Vamos lá! ✨'],any:true},
+ {k:'nome',ask:()=>['Para começar: qual é o seu nome?'],ph:'Seu nome',chk:v=>v.length>=2&&v.length<=80&&/[a-zA-ZÀ-ÿ]/.test(v)?{v}:{e:'Não consegui identificar o seu nome 🤔 Pode digitar novamente?'},ack:d=>`Prazer, ${d.nome.split(' ')[0]}! 😊`},
+ {k:'empresa',ask:()=>['Qual é o nome da sua empresa?'],ph:'Nome da empresa',chk:chTxt(2,'Preciso de pelo menos 2 caracteres para registrar 🙂 Qual o nome da empresa?'),ack:()=>'Registrado ✨'},
+ {k:'tel',ask:()=>['Qual é o seu telefone/WhatsApp? Pode incluir o DDD.'],ph:'(91) 99999-9999',mode:'tel',chk:v=>{let n=v.replace(/\D/g,'');if(n.length>11&&n.startsWith('55'))n=n.slice(2);if(n.length<10||n.length>11)return{e:'Esse número parece incompleto 📱 Pode enviar com DDD? Ex.: (91) 99999-9999'};return{v:n.length===11?`(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`:`(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}`}},ack:()=>'Número anotado.'},
+ {k:'email',ask:()=>['E qual é o seu e-mail?'],ph:'voce@empresa.com',mode:'email',chk:v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)?{v:v.toLowerCase()}:{e:'Hmm, esse e-mail não parece válido 🤔 Pode conferir? Exemplo: nome@empresa.com'},ack:()=>'Perfeito, obrigada!'},
+ {k:'cargo',ask:()=>['Qual é o seu cargo? Por exemplo: Fundadora, Sócio, Marketing.'],ph:'Ex.: Fundadora',chk:chTxt(2,'Pode me dizer o seu cargo? Ex.: Fundadora, Sócio, Marketing 💼'),ack:()=>'Entendido.'},
+ {k:'colab',type:'single',opts:CH.colab,ask:()=>['Agora, sobre o seu negócio 💼','Quantas pessoas trabalham com você?'],ack:()=>'Ótimo, já tenho uma ideia do porte.'},
+ {k:'ig',type:'skip',ask:()=>['Você tem Instagram? É opcional. Se tiver, me passe o @ 📸'],ph:'@seuperfil',skip:'Pular',chk:v=>{v=v.replace(/^https?:\/\/(www\.)?instagram\.com\//i,'').replace(/[\/?].*$/,'').replace(/^@/,'');return /^[\w.]{1,30}$/.test(v)?{v:'@'+v}:{e:'Não reconheci esse @ 🤔 Envie só o usuário (ex.: @maiedesign) ou toque em Pular.'}},ack:d=>d.ig?'Vou dar uma olhadinha no perfil 👀':'Sem problemas!'},
+ {k:'site',type:'skip',ask:()=>['E um site? Também é opcional.'],ph:'seusite.com.br',skip:'Não tenho / Pular',chk:v=>/^(https?:\/\/)?[^\s.]+\.[^\s]{2,}$/.test(v)?{v:v.replace(/^https?:\/\//i,'').replace(/\/$/,'')}:{e:'Esse endereço não parece válido 🤔 Exemplo: seusite.com.br — ou toque em Pular.'},ack:d=>d.site?'Anotado.':'Tudo bem!'},
+ {k:'serv',type:'multi',opts:CH.serv,ask:()=>['O que você procura? ✨','Pode escolher mais de um serviço.'],ack:()=>'Ótima escolha.'},
+ {k:'invest',type:'single',opts:CH.invest,ask:()=>['Qual é a faixa de investimento aproximada?','Assim consigo indicar o melhor caminho para você.'],ack:()=>'Obrigada pela transparência 🙏'},
+ {k:'origem',type:'single',opts:CH.origem,ask:()=>['Última pergunta: como você conheceu o estúdio?'],ack:()=>'Que bom que nos encontramos 💜'}
+];
+const CH_Q=CH_STEPS.length-1;
+const cs={i:-1,d:{},busy:false,sel:[],started:false,done:false,open:false};
+const chSleep=ms=>new Promise(r=>setTimeout(r,matchMedia('(prefers-reduced-motion:reduce)').matches?0:ms));
+function chEl(){return document.getElementById('mch')}
+function chScroll(){const l=$('.mch-log',chEl());l.scrollTop=l.scrollHeight}
+function chBubble(txt,who,code){const l=$('.mch-log',chEl());const b=document.createElement('div');b.className='mch-m '+who;
+  if(code){const p=document.createElement('pre');p.textContent=txt;b.classList.add('code');b.append(p)}else b.textContent=txt;l.append(b);chScroll();return b}
+async function chSay(msgs,code){for(const m of [].concat(msgs)){const t=document.createElement('div');t.className='mch-m bot typing';t.innerHTML='<i></i><i></i><i></i>';$('.mch-log',chEl()).append(t);chScroll();
+  await chSleep(code?900:Math.min(1100,420+m.length*13));t.remove();chBubble(m,'bot',code)}}
+function chProg(){const n=Math.max(0,cs.i);$('.mch-bar i',chEl()).style.width=(cs.done?100:Math.min(n,CH_Q)/CH_Q*100)+'%';
+  $('.mch-sub',chEl()).textContent=cs.done?'Pré-briefing concluído':cs.i>0&&cs.i<=CH_Q?`Pergunta ${cs.i} de ${CH_Q}`:'Pré-briefing · online'}
+function chOpts(opts){const box=$('.mch-opts',chEl());box.innerHTML='';
+  (opts||[]).forEach(o=>{const b=document.createElement('button');b.type='button';b.className='mch-chip'+(o.cls?' '+o.cls:'');b.textContent=o.t;b.dataset.v=o.v!=null?o.v:o.t;if(o.multi)b.dataset.multi='1';if(o.go)b.dataset.go=o.go;box.append(b)})}
+function chInput(on,st){const f=$('.mch-in',chEl()),i=f.querySelector('input');i.disabled=!on;f.querySelector('button').disabled=!on;
+  i.placeholder=on?((st&&st.ph)||(st&&st.opts?'Escolha acima ou digite':'Digite aqui…')):'Aguarde…';i.inputMode=(st&&st.mode)||'text';i.type='text';if(on&&matchMedia('(pointer:fine)').matches)i.focus()}
+async function chAsk(){const st=CH_STEPS[cs.i];cs.busy=true;chInput(false);chOpts([]);chProg();
+  if(st.ask)await chSay(st.ask(cs.d));
+  cs.busy=false;cs.sel=[];
+  if(st.type==='single')chOpts(st.opts.map(o=>({t:o})));
+  else if(st.type==='multi')chOpts([...st.opts.map(o=>({t:o,multi:1})),{t:'Continuar →',cls:'go',go:'1'}]);
+  else if(st.type==='skip')chOpts([{t:st.skip,v:'',cls:'ghost'}]);
+  if(st.type==='multi')$('.mch-chip.go',chEl()).disabled=true;
+  chInput(true,st)}
+async function chStart(){if(cs.started)return;cs.started=true;cs.i=0;cs.busy=true;chInput(false);
+  await chSay(['Olá! 👋 Sou a assistente virtual do Maiê Design Studio.','Que bom ter você aqui. Para entender melhor o seu momento e te ajudar da melhor forma, preparei algumas perguntinhas rápidas ✨','Eu faço uma pergunta por vez e leva uns 3 minutos. Vamos lá?']);
+  cs.busy=false;chOpts([{t:CH_STEPS[0].opts[0]}]);chInput(true,{ph:'Digite “vamos” para começar'})}
+async function chReply(raw,shown){
+  if(cs.busy||cs.done||cs.i<0)return;const st=CH_STEPS[cs.i];let txt=String(raw).trim();
+  const skipped=st.type==='skip'&&(txt===''||/^(pular|nao tenho|nao|nenhum|nenhuma|sem)(\s|$)/.test(chNorm(txt)));
+  if(!txt&&!skipped)return;
+  chBubble(shown||(skipped?(st.skip||'Pular'):txt),'user');$('.mch-in input',chEl()).value='';
+  let val;
+  if(st.any){val=true}
+  else if(st.type==='single'){val=chOpt(txt,st.opts);if(!val)return chRetry('Não reconheci essa opção 🤔 Escolha uma das alternativas abaixo.')}
+  else if(st.type==='multi'){const parts=txt.split(/[,;\/]| e /i).map(s=>s.trim()).filter(Boolean);val=[...new Set(parts.map(p=>chOpt(p,st.opts)).filter(Boolean))];if(!val.length||val.length<parts.length&&!val.length)return chRetry('Não reconheci esses serviços 🤔 Escolha pelas opções abaixo.')}
+  else if(skipped){val=''}
+  else{const r=st.chk(txt);if(r.e)return chRetry(r.e);val=r.v}
+  if(st.k!=='start')cs.d[st.k]=val;
+  cs.busy=true;chInput(false);chOpts([]);
+  if(st.ack)await chSay(st.ack(cs.d));
+  if(cs.i<CH_Q){cs.i++;return chAsk()}
+  return chFinish()}
+async function chRetry(msg){cs.busy=true;chInput(false);const keep=$$('.mch-chip',chEl()).map(b=>({t:b.textContent,v:b.dataset.v,cls:b.classList.contains('go')?'go':b.classList.contains('ghost')?'ghost':'',multi:b.dataset.multi,go:b.dataset.go}));
+  await chSay(msg);cs.busy=false;chOpts(keep);chInput(true,CH_STEPS[cs.i])}
+function chReg(){const d=cs.d;return{id:uid(),data:today(),nome:d.nome,empresa:d.empresa,email:d.email,tel:d.tel,cargo:d.cargo,site:d.site||'',ig:d.ig||'',colab:d.colab,entregas:d.serv,invest:d.invest,origem:d.origem}}
+async function chFinish(){
+  const r=chReg(),first=r.nome.split(' ')[0];
+  const json={nome:r.nome,empresa:r.empresa,email:r.email,telefone:r.tel,cargo:r.cargo,tamanho_equipe:r.colab,site:r.site,instagram:r.ig,servicos:r.entregas,faixa_investimento:r.invest,origem:r.origem};
+  await chSay(['Pronto, '+first+'! Reuni tudo o que você me contou 🎉','Seus dados estão seguros e serão usados apenas para responder ao seu contato 🔒','Confira o resumo abaixo antes de eu enviar para a equipe:']);
+  await chSay(JSON.stringify(json,null,2),true);
+  await chSay('Está tudo certo?');
+  cs.busy=false;chOpts([{t:'Confirmar e enviar ✅',v:'__ok',cls:'go'},{t:'Refazer ↺',v:'__redo',cls:'ghost'}]);chInput(false,{});$('.mch-in input',chEl()).placeholder='Confirme ou refaça acima'}
+async function chSend(){
+  cs.busy=true;chOpts([]);const r=chReg();let ok=!PREBRIEF_ENDPOINT;
+  await chSay('Enviando suas informações para o painel do estúdio…');
+  if(PREBRIEF_ENDPOINT){try{await fetch(PREBRIEF_ENDPOINT,{method:'POST',mode:'no-cors',body:new URLSearchParams({...r,entregas:r.entregas.join(', ')})});ok=true}catch(err){}}
+  if(!ok&&!window.claude){cs.busy=false;await chSay('Não consegui enviar agora 😕 Verifique a sua conexão e tente novamente, ou fale direto comigo pelo WhatsApp.');chOpts([{t:'Tentar novamente',v:'__ok',cls:'go'},{t:'Chamar no WhatsApp',v:'__wa',cls:'ghost'}]);return}
+  DB.prebriefings.unshift({...r,enviado:ok});save();cs.done=true;chProg();
+  await chSay(['Tudo certo! Obrigada, '+r.nome.split(' ')[0]+' 💌','A equipe do estúdio entrará em contato em breve.']);
+  cs.busy=false;chOpts([{t:'Chamar no WhatsApp',v:'__wa',cls:'ghost'},{t:'Fechar',v:'__close',cls:'go'}]);chInput(false,{});$('.mch-in input',chEl()).placeholder='Conversa concluída'}
+function chReset(){cs.i=-1;cs.d={};cs.sel=[];cs.started=false;cs.done=false;cs.busy=false;$('.mch-log',chEl()).innerHTML='';chProg();chStart()}
+function openChat(){const c=chEl();if(!c)return;cs.open=true;$('.mch-win',c).hidden=false;c.classList.add('open');$('.mch-fab',c).setAttribute('aria-expanded','true');$('.mch-tip',c).hidden=true;try{sessionStorage.setItem('maie:tip','1')}catch(e){}chStart()}
+function closeChat(){const c=chEl();cs.open=false;$('.mch-win',c).hidden=true;c.classList.remove('open');$('.mch-fab',c).setAttribute('aria-expanded','false')}
+function initChat(){if(chEl())return;
+  const c=document.createElement('div');c.id='mch';c.className='mch';c.hidden=true;
+  c.innerHTML=`<div class="mch-tip" hidden>Vamos conversar? ✨</div><button class="mch-fab" type="button" aria-label="Abrir chat de pré-briefing" aria-expanded="false">🌸</button>
+  <section class="mch-win" role="dialog" aria-label="Chat de pré-briefing" hidden>
+   <header><span class="mch-av">🌸</span><div><b>Assistente Maiê</b><small class="mch-sub">Pré-briefing · online</small></div><button type="button" class="mch-x" aria-label="Fechar chat">×</button><div class="mch-bar"><i></i></div></header>
+   <div class="mch-log" role="log" aria-live="polite"></div><div class="mch-opts"></div>
+   <form class="mch-in" autocomplete="off"><input type="text" maxlength="160" aria-label="Sua resposta" placeholder="Aguarde…" disabled><button type="submit" aria-label="Enviar" disabled><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form>
+  </section>`;
+  document.body.append(c);
+  $('.mch-fab',c).onclick=()=>cs.open?closeChat():openChat();
+  $('.mch-x',c).onclick=closeChat;
+  $('.mch-tip',c).onclick=openChat;
+  $('.mch-in',c).addEventListener('submit',e=>{e.preventDefault();chReply($('input',e.target).value)});
+  $('.mch-opts',c).addEventListener('click',e=>{const b=e.target.closest('.mch-chip');if(!b||b.disabled||cs.busy)return;const v=b.dataset.v;
+    if(v==='__redo')return chReset();
+    if(v==='__ok'){chBubble('Confirmar e enviar ✅','user');return chSend()}
+    if(v==='__wa'){window.open(waLink(),'_blank','noopener');return}
+    if(v==='__close')return closeChat();
+    if(b.dataset.multi){b.classList.toggle('on');cs.sel=$$('.mch-chip.on',c).map(x=>x.dataset.v);$('.mch-chip.go',c).disabled=!cs.sel.length;return}
+    if(b.dataset.go){return chReply(cs.sel.join(', '),cs.sel.join(', '))}
+    chReply(v,b.textContent)});
+  addEventListener('keydown',e=>{if(e.key==='Escape'&&cs.open)closeChat()});
+  document.addEventListener('click',e=>{const a=e.target.closest('a[href="#prebriefing"]');if(a){e.preventDefault();openChat()}});
+  setTimeout(()=>{let seen=false;try{seen=sessionStorage.getItem('maie:tip')}catch(e){}if(!seen&&!cs.open&&!c.hidden)$('.mch-tip',c).hidden=false},3500)}
+function chatSync(r){initChat();const base=r.split('-')[0];const priv=PRIV.includes(base)||r.startsWith('projeto-')||r.startsWith('cliente-')||r==='entrar';chEl().hidden=priv;if(priv&&cs.open)closeChat()}
 function renderOutros(){
   document.title='Outros serviços — Maiê Design Studio';
   $('#root').innerHTML=`<div class="pub">${pubNav()}
@@ -1317,7 +1437,7 @@ function vPre(V){
       <div class="row" style="flex-wrap:wrap;gap:12px;justify-content:space-between"><div><b style="font-size:17px">${h(S.titulo||'Planilha de pré-briefings')}</b><div class="sm mut">${(S.rows||[]).length} resposta(s)${S.aba?' · aba “'+h(S.aba)+'”':''} · sincronizada ${agoTxt(S.fetchedAt)} · <a class="link" href="https://docs.google.com/spreadsheets/d/${encodeURIComponent(S.id)}/edit" target="_blank" rel="noopener">abrir no Google Sheets ↗</a></div></div>
       <div class="row"><button class="btn pri" id="psync" ${UIP.busy?'disabled':''}>${UIP.busy?'Sincronizando…':'↻ Sincronizar'}</button><button class="btn sm" id="ptroca">Trocar planilha</button></div></div>
       ${S.erro?`<div class="alert" style="margin-top:14px;background:color-mix(in srgb,#C0392B 9%,var(--panel));border-color:color-mix(in srgb,#C0392B 35%,transparent)"><span class="ico">⚠️</span><div><b>Não consegui ler a planilha</b><span class="sm">${h(errMsg(S.erro))}</span></div></div>`:''}</div>`;
-  V.innerHTML=`<div class="ph"><div><h1>Pré-<em>briefings</em></h1><p>Respostas do formulário público “Vamos conversar?”</p></div><div class="acts"><a class="btn" href="#prebriefing" target="_blank">Abrir formulário ↗</a></div></div>
+  V.innerHTML=`<div class="ph"><div><h1>Pré-<em>briefings</em></h1><p>Respostas do chat de pré-briefing do site</p></div><div class="acts"><a class="btn" href="#prebriefing" target="_blank">Abrir chat ↗</a></div></div>
   ${card}
   ${L.length?`<div class="grid">${L.map(p=>`<div class="card"><div class="row" style="flex-wrap:wrap;gap:18px"><div class="av" style="background:${colorOf(p.id)};border-radius:50%">${ini(p.nome)}</div><div style="flex:1;min-width:200px"><b style="font-size:17px">${h(p.empresa||'—')}</b><div class="sm mut">${h(p.nome)}${p.cargo?' · '+h(p.cargo):''}</div></div><div class="sm">${h(p.email)}<br>${h(p.tel)}</div><span class="sm mut" style="text-align:right">${fdl(p.data)}<br><span class="chipx" style="margin-top:4px">${p.fonte==='planilha'?'planilha':'este navegador'}</span></span></div>
   <details class="brief"><summary>Ver respostas</summary><dl class="ans"><dt>Entregas</dt><dd>${(p.entregas||[]).map(e=>`<span class="chipx" style="margin:0 4px 4px 0">${h(e)}</span>`).join('')||'—'}</dd><dt>Investimento</dt><dd>${h(p.invest||'—')}</dd><dt>Cargo</dt><dd>${h(p.cargo||'—')}</dd><dt>Colaboradores</dt><dd>${h(p.colab||'—')}</dd><dt>Como conheceu</dt><dd>${h(p.origem||'—')}</dd><dt>Site</dt><dd>${h(p.site||'—')}</dd><dt>Instagram</dt><dd>${h(p.ig||'—')}</dd></dl>
