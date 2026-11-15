@@ -2,7 +2,7 @@
 
 Site do Maiê Design Studio: página pública (propostas, outros serviços, pré-briefing) e área interna do estúdio (painel, projetos, tarefas, clientes, agenda, financeiro, pacotes, pré-briefings, importação de briefings e configurações).
 
-É um site estático: um único `index.html` (HTML + CSS + JavaScript) e a pasta `img/`. Não precisa de build.
+É um site estático: um único `index.html` (HTML + CSS + JavaScript) e a pasta `img/`. Não precisa de build. Publicado automaticamente na Vercel a cada push na branch `main`.
 
 ## Rodar no computador
 
