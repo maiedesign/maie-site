@@ -941,7 +941,7 @@ function renderLogin(){
   <div class="login-box"><img src="${IMG.logoD}" alt="maiê design"><h1>Espaço privado</h1><p>Digite a senha administrativa para entrar no estúdio.</p>
   <form id="lf" class="fld" style="gap:12px"><label for="pw">Senha</label><input id="pw" type="password" autocomplete="current-password" required><span class="errmsg hidden" id="lerr">Senha incorreta. Tente novamente.</span><button class="pill primary" style="justify-content:center;margin-top:8px">Entrar <span class="arr">→</span></button></form>
   <a class="back" href="#propostas">← Voltar ao site</a></div></div>`;
-  $('#lf').onsubmit=async e=>{e.preventDefault();let okp=false;try{okp=(await sha256($('#pw').value))===SENHA_HASH}catch(err){}if(okp){mem.auth=true;try{sessionStorage.setItem('maie:auth','1')}catch(e){}go('painel')}else{$('#lerr').classList.remove('hidden');$('#pw').parentElement.classList.add('err')}};
+  $('#lf').onsubmit=async e=>{e.preventDefault();let okp=false;try{okp=(await sha256($('#pw').value))===(DB.config.senhaHash||SENHA_HASH)}catch(err){}if(okp){mem.auth=true;try{sessionStorage.setItem('maie:auth','1')}catch(e){}go('painel')}else{$('#lerr').classList.remove('hidden');$('#pw').parentElement.classList.add('err')}};
 }
 
 /* =========================================================
@@ -1431,11 +1431,28 @@ function vConfig(V){
    <div class="card"><h3>Dados de demonstração</h3><p class="sm mut" style="margin-bottom:14px">Cria exemplos sem apagar nem duplicar seus registros.</p><div class="row"><button class="btn" id="demo">Criar exemplos</button><button class="btn danger" id="reset">Restaurar tudo ao padrão</button></div></div>
    <div class="card"><h3>Planilha de briefings</h3><p class="sm">${SH().id?`Conectada: <b>${h(SH().titulo||'planilha')}</b> · sincronizada ${agoTxt(SH().fetchedAt)}`:'Nenhuma planilha conectada.'}</p><a class="btn sm" href="#importar" style="margin-top:12px">Gerenciar em Importar briefings →</a></div>
    <div class="card"><h3>Acesso</h3><div class="row" style="justify-content:space-between"><span class="health"><i></i>Sistema funcionando</span><button class="btn" id="out">Sair do estúdio</button></div></div>
+   <div class="card"><h3>Senha de acesso</h3>
+    <form id="pwf" class="grid" style="gap:10px">
+      <div class="fld"><label>Senha atual</label><input type="password" name="atual" autocomplete="current-password" required></div>
+      <div class="fld"><label>Nova senha <span class="opt">(mínimo 8 caracteres)</span></label><input type="password" name="nova" autocomplete="new-password" minlength="8" required></div>
+      <div class="fld"><label>Repita a nova senha</label><input type="password" name="conf" autocomplete="new-password" required></div>
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap"><span class="sm mut">${C.senhaHash?'Senha personalizada ativa neste navegador.':'Usando a senha padrão do site.'}</span><button class="btn pri">Alterar senha</button></div>
+    </form>
+    <div id="pwinfo"></div></div>
   </div>
 `;
   const al=$('#al');al.oninput=()=>{$('#alv').textContent=al.value+' dia'+(al.value>1?'s':'')};al.onchange=()=>{C.alerta=+al.value;save();toast('Antecedência salva');refresh()};
   $('#tm').onclick=()=>{C.tema=C.tema==='dark'?'light':'dark';save();refresh()};
   $('#out').onclick=logout;
+  $('#pwf').onsubmit=async e=>{e.preventDefault();const f=e.target;
+    let atualOk=false;try{atualOk=(await sha256(f.atual.value))===(C.senhaHash||SENHA_HASH)}catch(err){}
+    if(!atualOk)return toast('Senha atual incorreta','err');
+    if(f.nova.value.length<8)return toast('A nova senha precisa ter pelo menos 8 caracteres','err');
+    if(f.nova.value!==f.conf.value)return toast('As senhas novas não são iguais','err');
+    const hh=await sha256(f.nova.value);C.senhaHash=hh;save();f.reset();toast('Senha alterada');
+    $('#pwinfo').innerHTML=`<div class="alert" style="margin-top:14px"><span class="ico">🔑</span><div><b>Senha alterada neste navegador</b><span class="sm">Para valer também nos outros aparelhos e no site publicado, o código abaixo precisa entrar no site (é só um código embaralhado, não a senha). Copie e me envie — ou cole em <code>SENHA_HASH</code> no index.html.</span>
+      <div class="row" style="margin-top:10px;flex-wrap:wrap"><code style="font-size:12px;word-break:break-all;background:var(--panel2);padding:8px 10px;border-radius:10px;flex:1">${hh}</code><button class="btn sm" id="cphash">Copiar código</button></div></div></div>`;
+    $('#cphash').onclick=()=>navigator.clipboard?.writeText(hh).then(()=>toast('Código copiado')).catch(()=>toast('Selecione e copie manualmente','err'))};
   $('#demo').onclick=()=>{const s=seed();let n=0;['clientes','pacotes','projetos','saidas','fixas'].forEach(k=>s[k].forEach(x=>{const key=x.nome||x.desc;if(!DB[k].some(y=>(y.nome||y.desc)===key)){DB[k].push(x);n++}}));save();toast(n?`${n} exemplo(s) criados`:'Os exemplos já existem');refresh()};
   $('#reset').onclick=()=>modal('Restaurar ao padrão?','<p>Todos os dados deste navegador voltam aos exemplos iniciais.</p>',()=>{DB=seed();save();toast('Dados restaurados');refresh()},'Restaurar',{danger:true});
   $$('[data-up]',V).forEach(i=>i.onchange=()=>{const f=i.files[0];if(!f)return;if(f.size>8*1024*1024)return toast('Imagem acima de 8 MB','err');if(!/image\/(jpeg|png|webp|gif)/.test(f.type))return toast('Formato não suportado','err');
