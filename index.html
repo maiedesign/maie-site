@@ -919,7 +919,6 @@ const CH_STEPS=[
  {k:'nome',ask:()=>['Para começar: qual é o seu nome?'],ph:'Seu nome',chk:v=>v.length>=2&&v.length<=80&&/[a-zA-ZÀ-ÿ]/.test(v)?{v}:{e:'Não consegui identificar o seu nome 🤔 Pode digitar novamente?'},ack:d=>`Prazer, ${d.nome.split(' ')[0]}! 😊`},
  {k:'empresa',ask:()=>['Qual é o nome da sua empresa?'],ph:'Nome da empresa',chk:chTxt(2,'Preciso de pelo menos 2 caracteres para registrar 🙂 Qual o nome da empresa?'),ack:()=>'Registrado ✨'},
  {k:'tel',ask:()=>['Qual é o seu telefone/WhatsApp? Pode incluir o DDD.'],ph:'(91) 99999-9999',mode:'tel',chk:v=>{let n=v.replace(/\D/g,'');if(n.length>11&&n.startsWith('55'))n=n.slice(2);if(n.length<10||n.length>11)return{e:'Esse número parece incompleto 📱 Pode enviar com DDD? Ex.: (91) 99999-9999'};return{v:n.length===11?`(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`:`(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}`}},ack:()=>'Número anotado.'},
- {k:'email',ask:()=>['E qual é o seu e-mail?'],ph:'voce@empresa.com',mode:'email',chk:v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)?{v:v.toLowerCase()}:{e:'Hmm, esse e-mail não parece válido 🤔 Pode conferir? Exemplo: nome@empresa.com'},ack:()=>'Perfeito, obrigada!'},
  {k:'cargo',ask:()=>['Qual é o seu cargo? Por exemplo: Fundadora, Sócio, Marketing.'],ph:'Ex.: Fundadora',chk:chTxt(2,'Pode me dizer o seu cargo? Ex.: Fundadora, Sócio, Marketing 💼'),ack:()=>'Entendido.'},
  {k:'colab',type:'single',opts:CH.colab,ask:()=>['Agora, sobre o seu negócio 💼','Quantas pessoas trabalham com você?'],ack:()=>'Ótimo, já tenho uma ideia do porte.'},
  {k:'ig',type:'skip',ask:()=>['Você tem Instagram? É opcional. Se tiver, me passe o @ 📸'],ph:'@seuperfil',skip:'Pular',chk:v=>{v=v.replace(/^https?:\/\/(www\.)?instagram\.com\//i,'').replace(/[\/?].*$/,'').replace(/^@/,'');return /^[\w.]{1,30}$/.test(v)?{v:'@'+v}:{e:'Não reconheci esse @ 🤔 Envie só o usuário (ex.: @maiedesign) ou toque em Pular.'}},ack:d=>d.ig?'Vou dar uma olhadinha no perfil 👀':'Sem problemas!'},
@@ -972,17 +971,14 @@ async function chReply(raw,shown){
   return chFinish()}
 async function chRetry(msg){cs.busy=true;chInput(false);const keep=$$('.mch-chip',chEl()).map(b=>({t:b.textContent,v:b.dataset.v,cls:b.classList.contains('go')?'go':b.classList.contains('ghost')?'ghost':'',multi:b.dataset.multi,go:b.dataset.go}));
   await chSay(msg);cs.busy=false;chOpts(keep);chInput(true,CH_STEPS[cs.i])}
-function chReg(){const d=cs.d;return{id:uid(),data:today(),nome:d.nome,empresa:d.empresa,email:d.email,tel:d.tel,cargo:d.cargo,site:d.site||'',ig:d.ig||'',colab:d.colab,entregas:d.serv,invest:d.invest,origem:d.origem}}
+function chReg(){const d=cs.d;return{id:uid(),data:today(),nome:d.nome,empresa:d.empresa,email:'',tel:d.tel,cargo:d.cargo,site:d.site||'',ig:d.ig||'',colab:d.colab,entregas:d.serv,invest:d.invest,origem:d.origem}}
 async function chFinish(){
-  const r=chReg(),first=r.nome.split(' ')[0];
-  const json={nome:r.nome,empresa:r.empresa,email:r.email,telefone:r.tel,cargo:r.cargo,tamanho_equipe:r.colab,site:r.site,instagram:r.ig,servicos:r.entregas,faixa_investimento:r.invest,origem:r.origem};
-  await chSay(['Pronto, '+first+'! Reuni tudo o que você me contou 🎉','Seus dados estão seguros e serão usados apenas para responder ao seu contato 🔒','Confira o resumo abaixo antes de eu enviar para a equipe:']);
-  await chSay(JSON.stringify(json,null,2),true);
-  await chSay('Está tudo certo?');
-  cs.busy=false;chOpts([{t:'Confirmar e enviar ✅',v:'__ok',cls:'go'},{t:'Refazer ↺',v:'__redo',cls:'ghost'}]);chInput(false,{});$('.mch-in input',chEl()).placeholder='Confirme ou refaça acima'}
+  const first=cs.d.nome.split(' ')[0];
+  await chSay(['Pronto, '+first+'! Já tenho tudo o que preciso 🎉','Seus dados estão seguros e serão usados apenas para responder ao seu contato 🔒']);
+  return chSend()}
 async function chSend(){
   cs.busy=true;chOpts([]);const r=chReg();let ok=!PREBRIEF_ENDPOINT;
-  await chSay('Enviando suas informações para o painel do estúdio…');
+  await chSay('Enviando suas informações para o estúdio…');
   if(PREBRIEF_ENDPOINT){try{await fetch(PREBRIEF_ENDPOINT,{method:'POST',mode:'no-cors',body:new URLSearchParams({...r,entregas:r.entregas.join(', ')})});ok=true}catch(err){}}
   if(!ok&&!window.claude){cs.busy=false;await chSay('Não consegui enviar agora 😕 Verifique a sua conexão e tente novamente, ou fale direto comigo pelo WhatsApp.');chOpts([{t:'Tentar novamente',v:'__ok',cls:'go'},{t:'Chamar no WhatsApp',v:'__wa',cls:'ghost'}]);return}
   DB.prebriefings.unshift({...r,enviado:ok});save();cs.done=true;chProg();
@@ -1006,7 +1002,7 @@ function initChat(){if(chEl())return;
   $('.mch-in',c).addEventListener('submit',e=>{e.preventDefault();chReply($('input',e.target).value)});
   $('.mch-opts',c).addEventListener('click',e=>{const b=e.target.closest('.mch-chip');if(!b||b.disabled||cs.busy)return;const v=b.dataset.v;
     if(v==='__redo')return chReset();
-    if(v==='__ok'){chBubble('Confirmar e enviar ✅','user');return chSend()}
+    if(v==='__ok'){chBubble(b.textContent,'user');return chSend()}
     if(v==='__wa'){window.open(waLink(),'_blank','noopener');return}
     if(v==='__close')return closeChat();
     if(b.dataset.multi){b.classList.toggle('on');cs.sel=$$('.mch-chip.on',c).map(x=>x.dataset.v);$('.mch-chip.go',c).disabled=!cs.sel.length;return}
