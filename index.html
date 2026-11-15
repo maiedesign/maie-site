@@ -523,7 +523,7 @@ dl.ans dt{color:var(--mut)}
 <script>
 /* =========================================================
    Maiê Design Studio — site público + área interna
-   Dados de demonstração guardados no navegador (localStorage)
+   Dados guardados no navegador (localStorage)
    ========================================================= */
 // Hash SHA-256 da senha da área interna (a senha em si não fica no código)
 const SENHA_HASH = 'edb870efe5b90a79afad4a9fa9ba338f2536d104a36eb64967a28c74611ee84c';
@@ -571,68 +571,37 @@ const PKG={
 
 /* ---------- seed ---------- */
 function seed(){
-  const t=today(), A=n=>addDays(t,n);
-  const cli=[
-    {id:'c1',nome:'Juliana Arché',empresa:'Arché Psicologia',cidade:'Belém/PA',tel:'(91) 98888-1020',email:'juliana@archepsi.com',ig:'@archepsi',notas:'Prefere contato por WhatsApp à tarde.',desde:A(-210)},
-    {id:'c2',nome:'Rafael Azo',empresa:'Azo Cafés Especiais',cidade:'São Paulo/SP',tel:'(11) 97777-3344',email:'rafael@azocafe.com',ig:'@azocafe',notas:'',desde:A(-120)},
-    {id:'c3',nome:'Camila Nunes',empresa:'Authentic Studio',cidade:'Lisboa/PT',tel:'+351 912 000 111',email:'camila@authentic.pt',ig:'@authentic.st',notas:'Cliente internacional, fuso +4h.',desde:A(-90)},
-    {id:'c4',nome:'Bruna Lima',empresa:'Ninho Doceria',cidade:'Ananindeua/PA',tel:'(91) 99111-2233',email:'bruna@ninho.com',ig:'@ninhodoceria',notas:'Permuta por bolos de eventos.',desde:A(-60)},
-    {id:'c5',nome:'Marcos Teles',empresa:'Teles Arquitetura',cidade:'Manaus/AM',tel:'(92) 98123-4567',email:'marcos@telesarq.com',ig:'@telesarq',notas:'',desde:A(-30)},
-    {id:'c6',nome:'Larissa Moura',empresa:'Flor de Cuia',cidade:'Belém/PA',tel:'(91) 98555-0099',email:'larissa@flordecuia.com',ig:'@flordecuia',notas:'',desde:A(-12)}
-  ];
+  const t=today();
   const pac=[
-    {id:'p1',nome:'Essencial',valor:900,ativo:true,capa:'rosa',...PKG.p1},
-    {id:'p2',nome:'instaPRO',valor:2400,ativo:true,capa:'ameixa',...PKG.p2},
-    {id:'p3',nome:'Premium',valor:5800,ativo:true,capa:'azul',...PKG.p3}
+    {id:'p1',nome:'Essencial',valor:900,ativo:true,...PKG.p1},
+    {id:'p2',nome:'instaPRO',valor:2400,ativo:true,...PKG.p2},
+    {id:'p3',nome:'Premium',valor:5800,ativo:true,...PKG.p3}
   ];
-  const mk=(id,nome,cid,pid,valor,ini,prazo,etapa,cob,doneN,pags,extra=[])=>{
-    const p=pac.find(x=>x.id===pid);
-    const ent=(p?p.entregaveis:[]).map((txt,i)=>({id:uid(),txt,status:i<doneN?'Concluída':(i===doneN?'Em andamento':'A fazer'),extra:false,prazo:null}))
-      .concat(extra.map(([txt,st])=>({id:uid(),txt,status:st,extra:true,prazo:prazo})));
-    return {id,nome,clienteId:cid,pacoteId:pid,valor,inicio:ini,briefing:addDays(ini,2),prazo,cobranca:cob,etapa,descricao:'',notas:'',entregaveis:ent,pagamentos:pags};
-  };
-  const prj=[
-    mk('j1','Identidade Arché','c1','p3',5800,A(-24),A(3),'Em revisão','dinheiro',6,[{id:uid(),desc:'Entrada (50%)',valor:2900,venc:A(-24),pago:A(-24)},{id:uid(),desc:'Parcela final',valor:2900,venc:A(3),pago:null}]),
-    mk('j2','Feed Azo Cafés','c2','p2',2400,A(-10),A(5),'Em andamento','dinheiro',2,[{id:uid(),desc:'Entrada',valor:1200,venc:A(-10),pago:A(-9)},{id:uid(),desc:'Parcela final',valor:1200,venc:A(5),pago:null}],[['Post de lançamento do blend','A fazer']]),
-    mk('j3','Rebranding Authentic','c3','p3',6500,A(-40),A(-2),'Aguardando cliente','dinheiro',5,[{id:uid(),desc:'Entrada',valor:3250,venc:A(-40),pago:A(-40)},{id:uid(),desc:'Parcela 2',valor:1625,venc:A(-8),pago:null},{id:uid(),desc:'Parcela 3',valor:1625,venc:A(12),pago:null}]),
-    mk('j4','Cardápio Ninho','c4','p1',900,A(-5),A(10),'Em andamento','permuta',1,[]),
-    mk('j5','Landing Teles','c5',null,3200,A(2),A(17),'Não iniciado','dinheiro',0,[{id:uid(),desc:'Entrada',valor:1600,venc:A(2),pago:null},{id:uid(),desc:'Final',valor:1600,venc:A(17),pago:null}],[['Wireframe','A fazer'],['Design desktop','A fazer'],['Design mobile','A fazer']]),
-    mk('j6','Posts Flor de Cuia','c6','p2',2400,A(-55),A(-20),'Concluído','dinheiro',5,[{id:uid(),desc:'Pagamento único',valor:2400,venc:A(-55),pago:A(-55)}])
-  ];
-  prj[4].pacoteId=null;
-  const sai=[
-    {id:uid(),desc:'Adobe Creative Cloud',cat:'Ferramentas',valor:290,venc:A(-6),pago:A(-6),forma:'Cartão'},
-    {id:uid(),desc:'Impulsionamento Instagram',cat:'Marketing',valor:150,venc:A(-3),pago:A(-3),forma:'Cartão'},
-    {id:uid(),desc:'DAS MEI',cat:'Impostos',valor:76,venc:A(5),pago:null,forma:'Boleto'},
-    {id:uid(),desc:'Curso de tipografia',cat:'Educação',valor:420,venc:A(-34),pago:A(-34),forma:'Pix'},
-    {id:uid(),desc:'Mesa digitalizadora',cat:'Equipamentos',valor:890,venc:A(-70),pago:A(-70),forma:'Cartão'},
-    {id:uid(),desc:'Mockups premium',cat:'Ferramentas',valor:120,venc:A(-95),pago:A(-95),forma:'Pix'}
-  ];
-  const fix=[
-    {id:'f1',nome:'Adobe Creative Cloud',cat:'Ferramentas',valor:290,dia:10,ativa:true},
-    {id:'f2',nome:'Internet',cat:'Contas fixas',valor:120,dia:15,ativa:true},
-    {id:'f3',nome:'Figma',cat:'Ferramentas',valor:80,dia:20,ativa:true},
-    {id:'f4',nome:'Coworking',cat:'Contas fixas',valor:450,dia:5,ativa:false}
-  ];
-  const pre=[
-    {id:uid(),data:A(-1),nome:'Patrícia Rocha',empresa:'Rocha Odonto',email:'patricia@rochaodonto.com',tel:'(91) 98000-1111',cargo:'Sócia',colab:'6–10',entregas:['Identidade visual','Design de post'],invest:'R$ 3.000+',origem:'Instagram',site:'',ig:'@rochaodonto'},
-    {id:uid(),data:A(-4),nome:'Diego Farias',empresa:'Açaí do Porto',email:'diego@acaidoporto.com',tel:'(91) 98222-3333',cargo:'Fundador',colab:'2–5',entregas:['Landing page'],invest:'R$ 1.500+',origem:'Indicação',site:'acaidoporto.com',ig:''}
-  ];
-  return {clientes:cli,pacotes:pac,projetos:prj,saidas:sai,fixas:fix,prebriefings:pre,briefings:{},
-    config:{alerta:7,tema:'light',capas:{},dataForms:addDays(t,-30)},seeded:true,pkgv:2};
+  return {clientes:[],pacotes:pac,projetos:[],saidas:[],fixas:[],prebriefings:[],briefings:{},
+    config:{alerta:7,tema:'light',capas:{},dataForms:addDays(t,-30)},seeded:true,pkgv:2,limpo:1};
+}
+/* Remove os registros de exemplo das versões anteriores, preservando o que foi cadastrado de verdade */
+function limparExemplos(D){
+  const cli=['c1','c2','c3','c4','c5','c6'],prj=['j1','j2','j3','j4','j5','j6'],fix=['f1','f2','f3','f4'];
+  const sai=['Adobe Creative Cloud','Impulsionamento Instagram','DAS MEI','Curso de tipografia','Mesa digitalizadora','Mockups premium'];
+  const pre=['patricia@rochaodonto.com','diego@acaidoporto.com'];
+  D.clientes=(D.clientes||[]).filter(c=>!cli.includes(c.id));
+  D.projetos=(D.projetos||[]).filter(p=>!prj.includes(p.id));
+  D.fixas=(D.fixas||[]).filter(f=>!fix.includes(f.id));
+  D.saidas=(D.saidas||[]).filter(x=>!(sai.includes(x.desc)&&!x.fixa)&&!(x.fixa&&fix.includes(x.fixa)));
+  D.prebriefings=(D.prebriefings||[]).filter(x=>!pre.includes(x.email));
+  const demoNomes=['helena prado','otávio reis','bruna lima','sílvia costa'];
+  Object.keys(D.briefings||{}).forEach(k=>{if(/^r[1-4]$/.test(D.briefings[k].rid||'')||cli.includes(k))delete D.briefings[k]});
+  D.clientes=D.clientes.filter(c=>!(demoNomes.includes(c.nome.trim().toLowerCase())&&/Importado da planilha|Cadastrado a partir do briefing/.test(c.notas||'')&&!(D.sheet&&D.sheet.id)));
+  D.limpo=1;return D;
 }
 let DB = store.get('db',null) || seed();
+if(!DB.limpo){limparExemplos(DB);try{localStorage.removeItem('maie:alertas')}catch(e){}}
 if((DB.pkgv||0)<2){['p1','p2','p3'].forEach(k=>{const x=DB.pacotes.find(p=>p.id===k);if(x)Object.assign(x,PKG[k])});DB.pkgv=2}
 const save=()=>{if(!store.set('db',DB))toast('Não foi possível salvar no navegador (espaço cheio?)','err')};
 save();
 
-/* Respostas de exemplo (usadas enquanto nenhuma planilha estiver conectada) */
-const FORMS_DEMO=(()=>{const t=today();return[
-  {rid:'r1',data:addDays(t,-2),nome:'Helena Prado',empresa:'Prado Joias',email:'helena@pradojoias.com',tel:'(91) 99777-0001',cidade:'Belém/PA',ig:'@pradojoias',r:{'O que a marca faz?':'Joias autorais em prata com pedras amazônicas.','Três palavras para a marca':'Delicada, ancestral, luminosa','Quem é o cliente ideal?':'Mulheres de 28 a 45 anos que valorizam peças com história.','Marcas que admira':'Pandora pela consistência, Aesop pela calma visual.','O que não pode ter':'Nada de dourado chamativo ou visual de loja de shopping.'}},
-  {rid:'r2',data:addDays(t,-6),nome:'Otávio Reis',empresa:'Reis Fit',email:'otavio@reisfit.com',tel:'(91) 99777-0002',cidade:'Castanhal/PA',ig:'@reisfit',r:{'O que a marca faz?':'Estúdio de treino funcional para pequenos grupos.','Três palavras para a marca':'Energia, comunidade, constância','Quem é o cliente ideal?':'Adultos que já desistiram de academia tradicional.','Marcas que admira':'Nike, pela atitude.','O que não pode ter':'Corpos “perfeitos” e linguagem agressiva.'}},
-  {rid:'r3',data:addDays(t,-14),nome:'Bruna Lima',empresa:'Ninho Doceria',email:'bruna@ninho.com',tel:'(91) 99111-2233',cidade:'Ananindeua/PA',ig:'@ninhodoceria',r:{'O que a marca faz?':'Doces finos para festas e presentes.','Três palavras para a marca':'Afetiva, caprichosa, acolhedora','Quem é o cliente ideal?':'Mães organizando festas e empresas que presenteiam.','Marcas que admira':'Bettina Orrico','O que não pode ter':'Visual infantil demais.'}},
-  {rid:'r4',data:addDays(t,-45),nome:'Sílvia Costa',empresa:'Costa Advocacia',email:'silvia@costaadv.com',tel:'(91) 99777-0004',cidade:'Belém/PA',ig:'',r:{'O que a marca faz?':'Advocacia trabalhista para mulheres.','Três palavras para a marca':'Firme, humana, clara','Quem é o cliente ideal?':'Trabalhadoras que sofreram injustiça no emprego.','Marcas que admira':'—','O que não pode ter':'Balança e martelo.'}}
-]})();
+const FORMS_DEMO=[];
 
 /* =========================================================
    Google Sheets (conector do claude.ai) + resumo por IA
@@ -1352,7 +1321,7 @@ function sheetCard(){
   if(!S.id)return `<div class="card" style="margin-bottom:18px"><h3>Planilha do Google Sheets</h3>
     <p class="sm mut" style="margin-bottom:14px">Cole o link da planilha de respostas do seu Google Forms. A leitura usa o conector Google Sheets da sua conta no claude.ai — nada de senha aqui.</p>
     <form id="shf" class="row" style="flex-wrap:wrap"><input name="link" required placeholder="https://docs.google.com/spreadsheets/d/…" style="flex:1;min-width:260px;background:var(--bg);border:1px solid var(--ln);border-radius:999px;padding:11px 16px;color:var(--txt)"><button class="btn pri">Conectar planilha</button></form>
-    <p class="sm mut" style="margin-top:12px">Enquanto nenhuma planilha estiver conectada, a lista abaixo mostra respostas de exemplo.</p></div>`;
+</div>`;
   return `<div class="card" style="margin-bottom:18px"><h3>Planilha do Google Sheets <span class="chipx ${S.erro?'f-Atraso':S.fetchedAt?'f-Pago':'f-Pendente'}" style="letter-spacing:0;text-transform:none"><i></i>${S.erro?'Com problema':S.fetchedAt?'Conectada':'Aguardando 1ª sincronização'}</span></h3>
     <div class="row" style="flex-wrap:wrap;gap:12px;justify-content:space-between">
       <div><b style="font-size:17px">${h(S.titulo||'Planilha de briefings')}</b><div class="sm mut">${S.rows.length} resposta${S.rows.length!==1?'s':''} · sincronizada ${agoTxt(S.fetchedAt)} · <a class="link" href="https://docs.google.com/spreadsheets/d/${encodeURIComponent(S.id)}/edit" target="_blank" rel="noopener">abrir no Google Sheets ↗</a></div></div>
@@ -1384,7 +1353,7 @@ function vImportar(V){
   const imported=rid=>Object.values(DB.briefings).some(b=>b.rid===rid);
   const cliOf=rid=>{const e=Object.entries(DB.briefings).find(([,b])=>b.rid===rid);return e&&cli(e[0])};
   const novas=resp.filter(r=>!imported(r.rid));
-  V.innerHTML=`<div class="ph"><div><h1>Importar <em>briefings</em></h1><p>Briefings do Forms · ${isDemo()?'<span class="chipx">respostas de exemplo</span>':'respostas da planilha conectada'}</p></div>
+  V.innerHTML=`<div class="ph"><div><h1>Importar <em>briefings</em></h1><p>Briefings do Forms · ${isDemo()?'conecte a planilha para ver as respostas':'respostas da planilha conectada'}</p></div>
   <div class="acts"><label class="sm mut row">Data inicial <input type="date" id="di" value="${di||''}" class="btn"></label><button class="btn pri" id="ia" ${novas.length?'':'disabled style="opacity:.5"'}>Importar novas · ${novas.length}</button></div></div>
   ${sheetCard()}
   ${UIS.busy&&!F.length?'<div class="empty"><b>Lendo a planilha…</b>Isso leva alguns segundos.</div>':!di?'<div class="empty"><b>Defina a data inicial</b>para buscar as respostas do Forms.</div>':!resp.length?`<div class="empty"><b>Nenhuma resposta encontrada</b>${S.id&&!S.fetchedAt?'Clique em Sincronizar para ler a planilha.':'desde '+fdl(di)+'.'}</div>`:
@@ -1428,7 +1397,7 @@ function vConfig(V){
   <div class="grid g2" style="align-items:start">
    <div class="card"><h3>Alertas de prazo</h3><p class="sm mut" style="margin-bottom:14px">Antecedência usada nos avisos do painel e no filtro “Próximos dias”.</p><div class="row"><input type="range" min="1" max="60" value="${C.alerta}" id="al" style="flex:1;accent-color:var(--acc)"><b id="alv" style="min-width:70px;text-align:right">${C.alerta} dia${C.alerta>1?'s':''}</b></div></div>
    <div class="card"><h3>Aparência</h3><div class="row" style="justify-content:space-between"><span>Tema escuro <span class="sm mut">(vinho e dourado)</span></span><button class="switch ${C.tema==='dark'?'on':''}" id="tm"></button></div></div>
-   <div class="card"><h3>Dados de demonstração</h3><p class="sm mut" style="margin-bottom:14px">Cria exemplos sem apagar nem duplicar seus registros.</p><div class="row"><button class="btn" id="demo">Criar exemplos</button><button class="btn danger" id="reset">Restaurar tudo ao padrão</button></div></div>
+   <div class="card"><h3>Dados do estúdio</h3><p class="sm mut" style="margin-bottom:14px">Apaga clientes, projetos, financeiro e pré-briefings guardados neste navegador. Os pacotes voltam ao padrão.</p><div class="row"><button class="btn danger" id="reset">Apagar todos os dados</button></div></div>
    <div class="card"><h3>Planilha de briefings</h3><p class="sm">${SH().id?`Conectada: <b>${h(SH().titulo||'planilha')}</b> · sincronizada ${agoTxt(SH().fetchedAt)}`:'Nenhuma planilha conectada.'}</p><a class="btn sm" href="#importar" style="margin-top:12px">Gerenciar em Importar briefings →</a></div>
    <div class="card"><h3>Acesso</h3><div class="row" style="justify-content:space-between"><span class="health"><i></i>Sistema funcionando</span><button class="btn" id="out">Sair do estúdio</button></div></div>
    <div class="card"><h3>Senha de acesso</h3>
@@ -1453,8 +1422,7 @@ function vConfig(V){
     $('#pwinfo').innerHTML=`<div class="alert" style="margin-top:14px"><span class="ico">🔑</span><div><b>Senha alterada neste navegador</b><span class="sm">Para valer também nos outros aparelhos e no site publicado, o código abaixo precisa entrar no site (é só um código embaralhado, não a senha). Copie e me envie — ou cole em <code>SENHA_HASH</code> no index.html.</span>
       <div class="row" style="margin-top:10px;flex-wrap:wrap"><code style="font-size:12px;word-break:break-all;background:var(--panel2);padding:8px 10px;border-radius:10px;flex:1">${hh}</code><button class="btn sm" id="cphash">Copiar código</button></div></div></div>`;
     $('#cphash').onclick=()=>navigator.clipboard?.writeText(hh).then(()=>toast('Código copiado')).catch(()=>toast('Selecione e copie manualmente','err'))};
-  $('#demo').onclick=()=>{const s=seed();let n=0;['clientes','pacotes','projetos','saidas','fixas'].forEach(k=>s[k].forEach(x=>{const key=x.nome||x.desc;if(!DB[k].some(y=>(y.nome||y.desc)===key)){DB[k].push(x);n++}}));save();toast(n?`${n} exemplo(s) criados`:'Os exemplos já existem');refresh()};
-  $('#reset').onclick=()=>modal('Restaurar ao padrão?','<p>Todos os dados deste navegador voltam aos exemplos iniciais.</p>',()=>{DB=seed();save();toast('Dados restaurados');refresh()},'Restaurar',{danger:true});
+  $('#reset').onclick=()=>modal('Apagar todos os dados?','<p>Clientes, projetos, tarefas, financeiro, pré-briefings e briefings importados deste navegador serão apagados. A senha, o tema e as planilhas conectadas continuam. Não dá para desfazer.</p>',()=>{const keep={senhaHash:C.senhaHash,tema:C.tema,alerta:C.alerta},sh=DB.sheet,ps=DB.preSheet;DB=seed();Object.assign(DB.config,keep);if(sh)DB.sheet=sh;if(ps)DB.preSheet=ps;save();toast('Dados apagados');refresh()},'Apagar tudo',{danger:true});
   $$('[data-up]',V).forEach(i=>i.onchange=()=>{const f=i.files[0];if(!f)return;if(f.size>8*1024*1024)return toast('Imagem acima de 8 MB','err');if(!/image\/(jpeg|png|webp|gif)/.test(f.type))return toast('Formato não suportado','err');
     const rd=new FileReader();rd.onload=()=>{const img=new Image();img.onload=()=>{const cv=document.createElement('canvas'),w=Math.min(1200,img.width);cv.width=w;cv.height=img.height*w/img.width;cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);C.capas[i.dataset.up]=cv.toDataURL('image/jpeg',.82);save();toast('Imagem enviada');refresh()};img.src=rd.result};rd.readAsDataURL(f)});
   $$('[data-rm]',V).forEach(b=>b.onclick=()=>{delete C.capas[b.dataset.rm];save();toast('Imagem removida');refresh()});
