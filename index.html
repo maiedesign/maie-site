@@ -525,7 +525,9 @@ dl.ans dt{color:var(--mut)}
    Maiê Design Studio — site público + área interna
    Dados de demonstração guardados no navegador (localStorage)
    ========================================================= */
-const SENHA = 'maie2026';
+// Hash SHA-256 da senha da área interna (a senha em si não fica no código)
+const SENHA_HASH = 'edb870efe5b90a79afad4a9fa9ba338f2536d104a36eb64967a28c74611ee84c';
+async function sha256(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 const WHATS = '5591992942038';
 const EMAIL = 'maiedesignn@gmail.com';
 // URL do app da Web do Google Apps Script que grava o pré-briefing na planilha (veja google-apps-script/README.md)
@@ -938,8 +940,8 @@ function renderLogin(){
   $('#root').innerHTML=`<div class="login"><div class="login-art"><img class="bg" src="${IMG.port}" alt=""><h2>As coisas boas<br>ganham forma<br><em>aos poucos.</em></h2></div>
   <div class="login-box"><img src="${IMG.logoD}" alt="maiê design"><h1>Espaço privado</h1><p>Digite a senha administrativa para entrar no estúdio.</p>
   <form id="lf" class="fld" style="gap:12px"><label for="pw">Senha</label><input id="pw" type="password" autocomplete="current-password" required><span class="errmsg hidden" id="lerr">Senha incorreta. Tente novamente.</span><button class="pill primary" style="justify-content:center;margin-top:8px">Entrar <span class="arr">→</span></button></form>
-  <div class="demo">Demonstração: a senha é <b>${SENHA}</b></div><a class="back" href="#propostas">← Voltar ao site</a></div></div>`;
-  $('#lf').onsubmit=e=>{e.preventDefault();if($('#pw').value===SENHA){mem.auth=true;try{sessionStorage.setItem('maie:auth','1')}catch(e){}go('painel')}else{$('#lerr').classList.remove('hidden');$('#pw').parentElement.classList.add('err')}};
+  <a class="back" href="#propostas">← Voltar ao site</a></div></div>`;
+  $('#lf').onsubmit=async e=>{e.preventDefault();let okp=false;try{okp=(await sha256($('#pw').value))===SENHA_HASH}catch(err){}if(okp){mem.auth=true;try{sessionStorage.setItem('maie:auth','1')}catch(e){}go('painel')}else{$('#lerr').classList.remove('hidden');$('#pw').parentElement.classList.add('err')}};
 }
 
 /* =========================================================

@@ -29,7 +29,7 @@ No topo do `<script>` em `index.html`:
 - `WHATS` – número do WhatsApp (formato `55DDDNÚMERO`)
 - `EMAIL` – e-mail de contato
 - `PREBRIEF_ENDPOINT` – URL do Apps Script que grava o pré-briefing na planilha
-- `SENHA` – senha da área interna (**só para demonstração**, veja abaixo)
+- `SENHA_HASH` – hash SHA-256 da senha da área interna. Para trocar a senha, gere o hash da nova (ex.: `printf 'nova-senha' | shasum -a 256`) e cole aqui. Ainda é uma proteção simples, feita no navegador (veja abaixo)
 - `PKG` – textos dos pacotes Essencial, instaPRO e Premium
 - `OUTROS` – textos e etapas de Design de post e Landing page
 
