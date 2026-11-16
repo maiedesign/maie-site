@@ -18,7 +18,7 @@ function doPost(e) {
   try {
     const p = (e && e.parameter) || {};
     if (p.website) return resposta({ ok: true }); // campo anti-spam preenchido: ignora
-    if (!p.nome || !p.email) return resposta({ ok: false, erro: 'faltam dados' });
+    if (!p.nome) return resposta({ ok: false, erro: 'faltam dados' });
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const aba = ss.getSheetByName(ABA) || ss.insertSheet(ABA);
