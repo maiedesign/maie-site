@@ -1,11 +1,3 @@
-/**
- * Maiê Design Studio — recebe o pré-briefing do site e grava na planilha.
- *
- * Como usar: abra a planilha no Google Sheets > Extensões > Apps Script,
- * cole este código, salve e implante como "App da Web"
- * (Executar como: Eu · Quem pode acessar: Qualquer pessoa).
- * Copie a URL gerada e coloque em PREBRIEF_ENDPOINT no index.html.
- */
 const ABA = 'Pré-briefings';
 const CABECALHO = ['Data', 'ID', 'Nome', 'Empresa', 'E-mail', 'Telefone', 'Cargo',
   'Colaboradores', 'Entregas', 'Investimento', 'Origem', 'Site', 'Instagram'];
@@ -17,7 +9,7 @@ function doPost(e) {
   lock.waitLock(10000);
   try {
     const p = (e && e.parameter) || {};
-    if (p.website) return resposta({ ok: true }); // campo anti-spam preenchido: ignora
+    if (p.website) return resposta({ ok: true });
     if (!p.nome) return resposta({ ok: false, erro: 'faltam dados' });
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -35,12 +27,6 @@ function doPost(e) {
   }
 }
 
-/**
- * Leitura das planilhas pela área interna do site (no seu domínio).
- * Protegida pelo código de acesso salvo nas propriedades do script (veja gerarCodigo).
- *   ?acao=meta&id=PLANILHA&token=CODIGO            → nome da planilha e das abas
- *   ?acao=valores&id=PLANILHA&aba=ABA&token=CODIGO  → todas as linhas da aba
- */
 function doGet(e) {
   var p = (e && e.parameter) || {};
   if (!p.acao) return resposta({ ok: true, info: 'Endpoint do pré-briefing do Maiê Design Studio' });
@@ -64,14 +50,12 @@ function doGet(e) {
   }
 }
 
-/** Rode esta função UMA vez no editor para criar o código de acesso (aparece no registro de execução). */
 function gerarCodigo() {
   var codigo = Utilities.getUuid().replace(/-/g, '');
   PropertiesService.getScriptProperties().setProperty('TOKEN', codigo);
   Logger.log('Código de acesso: ' + codigo);
 }
 
-// Evita que um texto enviado vire fórmula na planilha e limita o tamanho.
 function limpar(v) {
   var s = String(v == null ? '' : v).slice(0, 1000);
   return /^[=+\-@]/.test(s) ? "'" + s : s;
