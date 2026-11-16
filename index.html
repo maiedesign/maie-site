@@ -566,20 +566,17 @@ dl.ans dt{color:var(--mut)}
 <body>
 <div id="root"></div>
 <div class="toasts" id="toasts"></div>
-
 <script>
 /* =========================================================
-   Maiê Design Studio — site público + área interna
-   Dados guardados no navegador (localStorage)
+   Maiê Design Studio — site público
+   Repositório: maie-site · painel em https://studio.maiedesign.com.br/
    ========================================================= */
-// Hash SHA-256 da senha da área interna (a senha em si não fica no código)
-const SENHA_HASH = 'edb870efe5b90a79afad4a9fa9ba338f2536d104a36eb64967a28c74611ee84c';
-async function sha256(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 const WHATS = '5591992942038';
 const EMAIL = 'maiedesignn@gmail.com';
 // URL do app da Web do Google Apps Script que grava o pré-briefing na planilha (veja google-apps-script/README.md)
 const PREBRIEF_ENDPOINT = 'https://script.google.com/macros/s/AKfycby42Yz8zpv7qz4eHsbDS8TveaARsi9oJM3HNnP54gxVVKG75dyJ5NkjpIQ7B7avG-VU/exec';
 const IMG = {logo:'img/logo.png',logoD:'img/logo-design.png',sub:'img/submarca.png',logoC:'img/logo-claro.png',subC:'img/submarca-clara.png',port:'img/portfolio.jpg'};
+const STUDIO_URL = 'https://studio.maiedesign.com.br/';
 
 /* ---------- utils ---------- */
 const $ = (s,el=document)=>el.querySelector(s);
@@ -589,228 +586,31 @@ const uid = ()=>Math.random().toString(36).slice(2,9);
 const pad = n=>String(n).padStart(2,'0');
 const iso = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const today = ()=>iso(new Date());
-const parse = s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
-const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return iso(d)};
-const diff=(a,b)=>Math.round((parse(a)-parse(b))/864e5);
-const fd = s=>s?parse(s).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}).replace('.',''):'—';
-const fdl = s=>s?parse(s).toLocaleDateString('pt-BR'):'—';
-const brl = v=>(+v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const ini = s=>(s||'?').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
-const ym = s=>s?s.slice(0,7):'';
-const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const COLORS=['#AD2159','#7B3A5E','#C59A55','#2F4A7A','#3F6B52','#B5523B','#5B1531'];
-const colorOf = id=>COLORS[[...String(id)].reduce((a,c)=>a+c.charCodeAt(0),0)%COLORS.length];
-const store={get(k,d){try{const v=localStorage.getItem('maie:'+k);return v?JSON.parse(v):d}catch(e){return mem[k]??d}},set(k,v){mem[k]=v;try{localStorage.setItem('maie:'+k,JSON.stringify(v))}catch(e){return false}return true}};
-const mem={};
 
-const ETAPAS=['Não iniciado','Em andamento','Aguardando cliente','Em revisão','Concluído','Pausado'];
-const T_ETAPAS=['A fazer','Em andamento','Aguardando aprovação','Concluída'];
-const CATS=['Ferramentas','Marketing','Equipamentos','Impostos','Serviços','Educação','Pessoal','Contas fixas','Outros'];
-const CAPAS=[['azul','#2F4A7A','Azul'],['rosa','#F2B9C6','Rosa'],['ameixa','#7B3A5E','Ameixa'],['areia','#EADBC8','Areia'],['amarelo','#E9B949','Amarelo'],['verde','#3F6B52','Verde']];
+const UI={srvGoto:null};
 
-/* ---------- pacotes oficiais ---------- */
+/* ---------- pacotes (texto oficial — edite aqui para mudar o site público) ---------- */
 const BONUS_PADRAO='Certificado Anti-plágio: Documento com validade legal que atesta o autor e o proprietário da obra';
 const BASE_ENT=['Logotipo + variações','Paleta de cores','Tipografia','Pattern (estampa da marca)',"Marca d'água (preta e branca)",'Ícones para redes sociais'];
 const PKG={
   p1:{nome:'Essencial',categoria:'Identidade visual',rotulo:'01 material gráfico',descricao:'Identidade visual essencial para uma marca consistente.',publico:'Para profissionais autônomos e pequenos negócios que precisam organizar a marca e transmitir mais confiança.',entregaveis:[...BASE_ENT,'Material gráfico 01'],bonus:BONUS_PADRAO},
   p2:{nome:'instaPRO',categoria:'Identidade visual',rotulo:'02 materiais gráficos',descricao:'Identidade visual completa para uma presença de marca forte no Instagram.',publico:'Para quem usa o Instagram para apresentar e vender e precisa manter uma presença visual consistente.',entregaveis:[...BASE_ENT,'2 Materiais gráficos'],bonus:BONUS_PADRAO},
   p3:{nome:'Premium',categoria:'Identidade visual',rotulo:'06 materiais gráficos',descricao:'Uma experiência visual completa, com materiais para diferentes pontos de contato.',publico:'Para marcas em crescimento que precisam de um sistema visual completo para diferentes pontos de contato.',entregaveis:[...BASE_ENT,'6 Materiais gráficos'],bonus:BONUS_PADRAO}};
-
-/* ---------- seed ---------- */
-function seed(){
-  const t=today();
-  const pac=[
-    {id:'p1',nome:'Essencial',valor:900,ativo:true,...PKG.p1},
-    {id:'p2',nome:'instaPRO',valor:2400,ativo:true,...PKG.p2},
-    {id:'p3',nome:'Premium',valor:5800,ativo:true,...PKG.p3}
-  ];
-  return {clientes:[],pacotes:pac,projetos:[],saidas:[],fixas:[],prebriefings:[],briefings:{},
-    config:{alerta:7,tema:'light',capas:{},dataForms:addDays(t,-30)},seeded:true,pkgv:2,limpo:1};
-}
-/* Remove os registros de exemplo das versões anteriores, preservando o que foi cadastrado de verdade */
-function limparExemplos(D){
-  const cli=['c1','c2','c3','c4','c5','c6'],prj=['j1','j2','j3','j4','j5','j6'],fix=['f1','f2','f3','f4'];
-  const sai=['Adobe Creative Cloud','Impulsionamento Instagram','DAS MEI','Curso de tipografia','Mesa digitalizadora','Mockups premium'];
-  const pre=['patricia@rochaodonto.com','diego@acaidoporto.com'];
-  D.clientes=(D.clientes||[]).filter(c=>!cli.includes(c.id));
-  D.projetos=(D.projetos||[]).filter(p=>!prj.includes(p.id));
-  D.fixas=(D.fixas||[]).filter(f=>!fix.includes(f.id));
-  D.saidas=(D.saidas||[]).filter(x=>!(sai.includes(x.desc)&&!x.fixa)&&!(x.fixa&&fix.includes(x.fixa)));
-  D.prebriefings=(D.prebriefings||[]).filter(x=>!pre.includes(x.email));
-  const demoNomes=['helena prado','otávio reis','bruna lima','sílvia costa'];
-  Object.keys(D.briefings||{}).forEach(k=>{if(/^r[1-4]$/.test(D.briefings[k].rid||'')||cli.includes(k))delete D.briefings[k]});
-  D.clientes=D.clientes.filter(c=>!(demoNomes.includes(c.nome.trim().toLowerCase())&&/Importado da planilha|Cadastrado a partir do briefing/.test(c.notas||'')&&!(D.sheet&&D.sheet.id)));
-  D.limpo=1;return D;
-}
-let DB = store.get('db',null) || seed();
-if(!DB.limpo){limparExemplos(DB);try{localStorage.removeItem('maie:alertas')}catch(e){}}
-if((DB.pkgv||0)<2){['p1','p2','p3'].forEach(k=>{const x=DB.pacotes.find(p=>p.id===k);if(x)Object.assign(x,PKG[k])});DB.pkgv=2}
-const save=()=>{if(!store.set('db',DB))toast('Não foi possível salvar no navegador (espaço cheio?)','err')};
-save();
-
-const FORMS_DEMO=[];
+const PACOTES_PUB=[PKG.p1,PKG.p2,PKG.p3];
 
 /* =========================================================
-   Google Sheets (conector do claude.ai) + resumo por IA
+   ROUTER (só páginas públicas — o painel é outro site)
    ========================================================= */
-const SHEETS='Google Sheets';
-let MCP=null,SAMPLE=null;
-const CAP=(async()=>{try{if(window.claude&&typeof claude.use==='function'){const [m,s]=await Promise.all([claude.use('mcp').catch(()=>null),claude.use('sample').catch(()=>null)]);MCP=m;SAMPLE=s}}catch(e){}
-  if($('.app')&&/importar|briefings|clientes/.test(location.hash))refresh()})();
-const emptySheet=()=>({id:'',aba:'',abas:[],titulo:'',header:[],rows:[],cols:null,fetchedAt:0,erro:null});
-const SH=()=>DB.sheet||(DB.sheet=emptySheet());
-const RS=()=>DB.resumos||(DB.resumos={});
-const UIS={busy:false};
-const sheetId=s=>{s=(s||'').trim();const m=s.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);if(m)return m[1];return /^[a-zA-Z0-9-_]{20,}$/.test(s)?s:''};
-const MAPKEYS=[
-  ['data','Data da resposta',h=>/carimbo|timestamp|data\/hora|data e hora|^data$/i.test(h)],
-  ['nome','Nome do cliente',h=>/nome|name|como (você )?se chama/i.test(h)&&!/empresa|marca|neg[oó]cio|projeto|company|usu[aá]rio/i.test(h)],
-  ['empresa','Empresa / marca',h=>/empresa|marca|neg[oó]cio|company/i.test(h)&&!/palavra|admira|cor|refer|faz|p[uú]blico|cliente ideal|n[aã]o pode/i.test(h)],
-  ['email','E-mail',h=>/e-?mail/i.test(h)],
-  ['tel','Telefone / WhatsApp',h=>/telefone|whats|celular|phone|fone/i.test(h)],
-  ['cidade','Cidade / estado',h=>/cidade|estado|localiza|city|onde (você )?mora/i.test(h)],
-  ['ig','Instagram',h=>/insta/i.test(h)],
-  ['site','Site',h=>/\bsite\b|website|url|p[aá]gina na internet/i.test(h)],
-  ['cargo','Cargo',h=>/cargo|fun[cç][aã]o|ocupa/i.test(h)]];
-const CLIKEYS=['empresa','email','tel','cidade','ig','site','cargo'];
-const keyLabel=k=>(MAPKEYS.find(x=>x[0]===k)||[,k])[1];
-function autoMap(header){const used=new Set(),map={};MAPKEYS.forEach(([k,,t])=>{const i=header.findIndex((h,ix)=>!used.has(ix)&&t(String(h).trim()));map[k]=i;if(i>=0)used.add(i)});return map}
-function autoCols(header){const m=autoMap(header),cols=header.map(h=>String(h).trim()?'q':'x');Object.entries(m).forEach(([k,i])=>{if(i>=0)cols[i]=k});return cols}
-function getCols(){const S=SH();if(!S.cols||S.cols.length!==S.header.length){S.cols=autoCols(S.header)}return S.cols}
-function findValues(p){if(typeof p==='string'){try{p=JSON.parse(p)}catch(e){return null}}if(!p||typeof p!=='object')return null;
-  if(Array.isArray(p)&&p.length&&p.every(Array.isArray))return p;
-  if(Array.isArray(p.values))return p.values;
-  if(Array.isArray(p.valueRanges)&&p.valueRanges[0])return p.valueRanges[0].values||[];
-  for(const v of Object.values(p)){const r=typeof v==='object'?findValues(v):null;if(r)return r}return null}
-function sheetDate(v){if(v==null||v==='')return '';if(typeof v==='number'||/^\d+(\.\d+)?$/.test(String(v))){const n=+v;if(n>20000&&n<80000){const d=new Date(Date.UTC(1899,11,30)+n*864e5);return iso(new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()))}}
-  const s=String(v);let m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return `${m[3]}-${pad(m[2])}-${pad(m[1])}`;m=s.match(/(\d{4})-(\d{2})-(\d{2})/);if(m)return m[0];const d=new Date(s);return isNaN(d)?'':iso(d)}
-const hash=s=>{let x=0;for(const c of String(s))x=(x*31+c.charCodeAt(0))|0;return Math.abs(x).toString(36)};
-function sheetForms(){const S=SH();if(!S.rows.length)return [];const cols=getCols();
-  return S.rows.map((row,i)=>{const o={r:{}};cols.forEach((k,ix)=>{const v=String(row[ix]??'').trim();if(k==='x')return;if(k==='q'){if(v)o.r[String(S.header[ix]).trim()]=v}else if(!o[k])o[k]=v});
-    const nome=o.nome||'';return {rid:'g'+hash((o.data||i)+'|'+nome),data:sheetDate(o.data)||'',nome:nome||'Sem nome',empresa:o.empresa||'',email:o.email||'',tel:o.tel||'',cidade:o.cidade||'',ig:o.ig||'',site:o.site||'',cargo:o.cargo||'',r:o.r}}).filter(x=>x.nome!=='Sem nome'||Object.keys(x.r).length)}
-const isDemo=()=>!SH().id;
-const getForms=()=>isDemo()?FORMS_DEMO:sheetForms();
-const ERRS={needs_reauth:'A conexão com o Google expirou. Reconecte o Google Sheets em claude.ai → Configurações → Conectores e clique em Sincronizar.',
-  server_not_connected:'O conector Google Sheets não está adicionado na sua conta. Adicione em claude.ai → Configurações → Conectores.',
-  selection_required:'Há mais de uma conexão do Google Sheets na sua conta: escolha uma no aviso do claude.ai e sincronize de novo.',
-  not_in_manifest:'O acesso ao Google Sheets foi recusado para esta página. Clique em Sincronizar para autorizar.',
-  approval_required:'Falta autorizar o acesso ao Google Sheets. Clique em Sincronizar e escolha “Permitir”.',
-  consent_required:'Falta autorizar o acesso ao Google Sheets. Clique em Sincronizar e escolha “Permitir”.',
-  blocked_by_policy:'A política da sua organização bloqueia o Google Sheets nesta página.',
-  server_unavailable:'O Google Sheets não respondeu agora. Tente sincronizar de novo em instantes.',
-  nomcp:'Fora do claude.ai, a leitura da planilha passa pelo seu script do Google. Cole o código de acesso em Configurações → “Planilhas fora do claude.ai” e sincronize de novo.',
-  token:'O código de acesso das planilhas não confere. Confira em Configurações → “Planilhas fora do claude.ai” (é o código gerado pela função gerarCodigo no Apps Script).',
-  script:'O script do Google não respondeu como esperado. Atualize o código do Apps Script e publique uma nova versão (Implantar → Gerenciar implantações → Editar → Nova versão).',
-  rede:'Não consegui falar com o script do Google agora. Confira a internet e tente de novo.'};
-const errMsg=e=>e.code==='tool_error'?`A planilha não respondeu: confira o link, o nome da aba e se a sua conta Google tem acesso a ela.${e.message?' ('+String(e.message).slice(0,140)+')':''}`:(ERRS[e.code]||ERRS[['not_granted','capability_disabled','capability_removed'].includes(e.code)?'nomcp':'']||'Não foi possível ler a planilha agora. Tente de novo.');
-const canApps=()=>!!(PREBRIEF_ENDPOINT&&DB.config.gsToken);
-const podeLer=()=>!!MCP||canApps();
-/* Leitura pelo Apps Script do estúdio (usada no seu domínio, fora do claude.ai) */
-async function appsCall(tool,input){
-  const q=new URLSearchParams({acao:tool==='get_spreadsheet'?'meta':'valores',id:input.spreadsheetId,token:DB.config.gsToken});
-  if(tool==='get_values'){const m=String(input.range||'').match(/^'(.*)'$/);if(m)q.set('aba',m[1].replace(/''/g,"'"));}
-  let r;try{r=await fetch(PREBRIEF_ENDPOINT+'?'+q.toString(),{method:'GET',redirect:'follow'})}catch(e){throw {code:'rede'}}
-  let j;try{j=await r.json()}catch(e){throw {code:'script'}}
-  if(j&&j.ok===false){throw {code:j.erro==='token'?'token':'tool_error',message:j.erro||''}}
-  if(j&&j.info&&!j.values&&!j.sheets)throw {code:'script'};
-  return j}
-async function sheetCall(tool,input,retry=true){if(!MCP&&window.claude)await Promise.race([CAP,new Promise(r=>setTimeout(r,11000))]);
-  if(!MCP){if(canApps())return appsCall(tool,input);throw {code:'not_granted'}}try{const r=await MCP.callTool(SHEETS,tool,input,{cache:false});return r.payload??r}catch(e){if(retry&&e&&e.retryable&&tool.startsWith('get')){await new Promise(r=>setTimeout(r,(e.retryAfterMs||800)+Math.random()*600));return sheetCall(tool,input,false)}throw e}}
-async function syncSheet(){const S=SH();if(!S.id||UIS.busy)return;UIS.busy=true;S.erro=null;refresh();
-  try{
-    if(!S.abas.length||!S.aba){const meta=await sheetCall('get_spreadsheet',{spreadsheetId:S.id,fields:['properties.title','sheets.properties.title']});const mo=typeof meta==='string'?JSON.parse(meta):meta;
-      S.titulo=mo?.properties?.title||S.titulo;S.abas=(mo?.sheets||[]).map(s=>s.properties?.title).filter(Boolean);if(!S.aba||!S.abas.includes(S.aba))S.aba=S.abas[0]||''}
-    const range=S.aba?`'${S.aba.replace(/'/g,"''")}'`:'A1:ZZ';
-    const vals=findValues(await sheetCall('get_values',{spreadsheetId:S.id,range}))||[];
-    const header=(vals[0]||[]).map(x=>String(x??''));
-    const sameHeader=JSON.stringify(header)===JSON.stringify(S.header);
-    S.header=header;S.rows=vals.slice(1).filter(r=>r.some(c=>String(c??'').trim()));
-    if(!sameHeader||!S.cols)S.cols=autoCols(header);
-    S.fetchedAt=Date.now();save();toast(`Planilha sincronizada · ${S.rows.length} resposta${S.rows.length!==1?'s':''}`);
-  }catch(e){S.erro={code:e?.code||'upstream_error',message:e?.message||'',retryable:!!e?.retryable};save()}
-  UIS.busy=false;refresh()}
-function resumoModelo(r,v=0){
-  const a=r.r,val=k=>{const e=Object.entries(a).find(([q])=>k.test(q));return e?e[1]:''};
-  const pal=(val(/palavra/i)||'').split(/[,;]/).map(s=>s.trim().toLowerCase()).filter(Boolean),pub=val(/cliente|p[uú]blico/i),nao=val(/n[aã]o pode|evitar|n[aã]o gosta/i),faz=val(/faz|neg[oó]cio|produto|servi/i),ref=val(/admira|refer[eê]ncia/i);
-  const T=[`${r.empresa||r.nome} pede uma identidade ${pal[0]||'clara'} e ${pal[1]||'consistente'}${pub?`, que fale com ${pub.replace(/\.$/,'').toLowerCase()}`:''}. Caminho: tipografia com personalidade, paleta contida e ${pal[2]?'um toque '+pal[2]:'respiro'}${nao?` — evitando ${nao.replace(/\.$/,'').toLowerCase()}`:''}.`,
-    `Uma marca que precisa parecer ${pal.join(', ')||'autêntica'}.${faz?` O ponto de partida é o que ela faz — ${faz.replace(/\.$/,'').toLowerCase()} — traduzido`:' Traduzir isso'} em formas simples e um sistema que funcione bem no Instagram.`,
-    `Território visual sugerido: ${pal[0]||'elegância'} como eixo, com contraste entre serifas e uma sans limpa.${ref?` Referência de postura: ${ref}.`:''}${nao?` Alerta do briefing: ${nao.toLowerCase()}`:''}`];
-  return T[v%T.length]}
-async function gerarResumo(r,v=0){
-  if(!SAMPLE)return {text:resumoModelo(r,v),ia:false};
-  const prompt=`Você é a designer May, do Maiê Design Studio (estúdio de identidade visual). A partir do briefing abaixo, escreva um "resumo de identidade" da marca em português do Brasil: 3 a 4 frases corridas, sem títulos, sem listas e sem markdown, dizendo a personalidade da marca, o público, o território visual sugerido (tipografia, cores, formas) e o que evitar.${v?' Traga uma abordagem diferente das anteriores.':''}
-
-Cliente: ${r.nome}${r.empresa?' · '+r.empresa:''}${r.cidade?' · '+r.cidade:''}
-${Object.entries(r.r).map(([q,a])=>`- ${q}: ${a}`).join('\n')}`;
-  try{const out=await SAMPLE(prompt,{modelTier:'quick',cache:false});return {text:String(out.text||'').trim(),ia:true}}
-  catch(e){return {text:resumoModelo(r,v),ia:false,erro:e?.code}}}
-
-/* ---------- derived ---------- */
-const cli = id=>DB.clientes.find(c=>c.id===id);
-const pac = id=>DB.pacotes.find(p=>p.id===id);
-const prj = id=>DB.projetos.find(p=>p.id===id);
-const progresso = p=>{const n=p.entregaveis.length;return n?Math.round(p.entregaveis.filter(e=>e.status==='Concluída').length/n*100):0};
-const recebido = p=>p.pagamentos.filter(x=>x.pago).reduce((a,x)=>a+ +x.valor,0);
-function fin(p){
-  if(p.cobranca==='permuta')return 'Permuta';
-  const rec=recebido(p);
-  if(p.valor>0&&rec>=p.valor)return 'Pago';
-  if(p.pagamentos.some(x=>!x.pago&&x.venc<today()))return 'Em atraso';
-  if(rec===0)return 'Pendente';
-  const first=[...p.pagamentos].sort((a,b)=>a.venc.localeCompare(b.venc))[0];
-  if(first&&first.pago&&p.pagamentos.filter(x=>x.pago).length===1)return 'Entrada paga';
-  return 'Parcialmente pago';
-}
-const finCls={'Pago':'f-Pago','Pendente':'f-Pendente','Entrada paga':'f-Entrada','Parcialmente pago':'f-Parcial','Em atraso':'f-Atraso','Permuta':'f-Permuta'};
-const finChip=p=>{const f=fin(p);return `<span class="chipx ${finCls[f]}"><i></i>${f}</span>`};
-const etChip=e=>`<span class="chipx st-${ETAPAS.indexOf(e)}"><i></i>${h(e)}</span>`;
-const ativos=()=>DB.projetos.filter(p=>!['Concluído','Pausado'].includes(p.etapa));
-const prazoAlertas=()=>ativos().filter(p=>p.prazo&&diff(p.prazo,today())<=DB.config.alerta).sort((a,b)=>a.prazo.localeCompare(b.prazo));
-const tarefasAbertas=()=>DB.projetos.filter(p=>p.etapa!=='Concluído').flatMap(p=>p.entregaveis.filter(e=>e.status!=='Concluída').map(e=>({...e,p})));
-const prazoTxt=p=>{if(!p.prazo)return 'Sem prazo';const d=diff(p.prazo,today());return d<0?`venceu há ${-d}d`:d===0?'vence hoje':`em ${d}d`};
-const capaBg=k=>{const i=Math.max(0,CAPAS.findIndex(x=>x[0]===k)),c=CAPAS[i];const up=DB.config.capas[k];return up?`background:url(${up}) center/cover`:`background:linear-gradient(to top,${c[1]} 0%,${c[1]}d9 22%,${c[1]}00 70%),url(${IMG.port}) ${[8,30,52,74,92,64][i]}% 50%/auto 135% no-repeat,${c[1]}`};
-
-/* ---------- toasts & modal ---------- */
-function toast(msg,type='ok'){const el=document.createElement('div');el.className='toast '+type;el.textContent=msg;$('#toasts').append(el);setTimeout(()=>{el.style.opacity=0;el.style.transition='.3s'},3600);setTimeout(()=>el.remove(),4000)}
-function modal(title,body,onOk,okTxt='Salvar',opts={}){
-  const bg=document.createElement('div');bg.className='modal-bg';
-  const theme=$('.app')?.dataset.theme;
-  bg.innerHTML=`<form class="modal app-modal" ${theme?'':''}><h2>${title}</h2>${body}<div class="foot">${opts.noCancel?'':'<button type="button" class="btn" data-x>Cancelar</button>'}${onOk?`<button class="btn ${opts.danger?'danger':'pri'}">${okTxt}</button>`:''}</div></form>`;
-  const app=$('.app');if(app){const cs=getComputedStyle(app);['--panel','--txt','--bg','--ln','--acc','--acc2','--mut','--panel2','--gold'].forEach(v=>bg.style.setProperty(v,cs.getPropertyValue(v)))}
-  document.body.append(bg);
-  const close=()=>bg.remove();
-  bg.addEventListener('click',e=>{if(e.target===bg||e.target.matches('[data-x]'))close()});
-  $('form',bg).addEventListener('submit',e=>{e.preventDefault();const fd=Object.fromEntries(new FormData(e.target));if(onOk&&onOk(fd,e.target)!==false)close()});
-  setTimeout(()=>$('input,select,textarea',bg)?.focus(),50);
-  return bg;
-}
-const confirmDel=(what,fn)=>modal('Excluir?',`<p>Tem certeza que deseja excluir <b>${h(what)}</b>? Essa ação não pode ser desfeita.</p>`,()=>{fn();},'Excluir',{danger:true});
-const fld=(name,label,val='',type='text',extra='')=>`<div class="fld ${extra.includes('full')?'full':''}"><label>${label}</label><input name="${name}" type="${type}" value="${h(val)}" ${extra.replace('full','')}></div>`;
-const sel=(name,label,opts,val,full)=>`<div class="fld ${full?'full':''}"><label>${label}</label><select name="${name}">${opts.map(o=>Array.isArray(o)?`<option value="${h(o[0])}" ${o[0]==val?'selected':''}>${h(o[1])}</option>`:`<option ${o==val?'selected':''}>${h(o)}</option>`).join('')}</select></div>`;
-const area=(name,label,val='',full=true)=>`<div class="fld ${full?'full':''}"><label>${label}</label><textarea name="${name}" rows="3">${h(val)}</textarea></div>`;
-
-/* =========================================================
-   ROUTER
-   ========================================================= */
-const PUBLIC=['propostas','prebriefing','obrigada','entrar'];
-const PRIV=['painel','projetos','tarefas','clientes','agenda','financeiro','pacotes','prebriefings','importar','briefings','configuracoes'];
-const authed=()=>{try{return sessionStorage.getItem('maie:auth')==='1'||mem.auth}catch(e){return mem.auth}};
 function go(r){if(location.hash.slice(1)===r)route();else location.hash=r}
 function route(){
   const r=location.hash.slice(1)||'propostas';
-  const base=r.split('-')[0];
   window.scrollTo(0,0);
   document.title = 'Maiê Design Studio';
-  chatSync(r);
+  chatSync();
   if(r==='propostas'||r==='')return renderPublic();
-  if(r==='prebriefing'){history.replaceState(null,'',location.pathname+location.search+'#propostas');renderPublic();chatSync('propostas');openChat();return}
+  if(r==='prebriefing'){history.replaceState(null,'',location.pathname+location.search+'#propostas');renderPublic();openChat();return}
   if(r==='outros-servicos')return renderOutros();
   if(r==='obrigada')return renderThanks();
-  if(r==='entrar')return authed()?go('painel'):renderLogin();
-  if(PRIV.includes(base)&&(r===base||['projeto','cliente'].includes(base)) || r.startsWith('projeto-')||r.startsWith('cliente-')){
-    if(!authed())return go('entrar');
-    return renderApp(r);
-  }
   render404();
 }
 addEventListener('hashchange',route);
@@ -824,7 +624,7 @@ function pubFoot(){return `<footer class="pub-foot"><div class="foot-grid">
 <div><img src="${IMG.logoD}" alt="maiê design"><p>Estúdio de design de marcas, interfaces e produtos.</p></div>
 <div><h5>Contato</h5><a href="https://wa.me/${WHATS}">WhatsApp · (91) 99294-2038</a><a href="mailto:${EMAIL}">${EMAIL}</a></div>
 <div><h5>Redes</h5><div class="socials"><a href="https://instagram.com/maiedesign" target="_blank" rel="noopener" aria-label="Instagram @maiedesign" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a><a href="https://wa.me/${WHATS}" target="_blank" rel="noopener" aria-label="WhatsApp" title="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1-.7-.3-1.4-.7-2-1.3-.6-.5-1-1.1-1.4-1.8-.1-.2 0-.4.1-.5l.4-.4.3-.4v-.4l-.8-1.9c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.6.6-.9 1.4-.9 2.2 0 .9.4 1.8 1 2.6 1.1 1.6 2.5 2.9 4.2 3.7 1.6.7 2.1.6 2.6.5.7-.1 1.4-.6 1.7-1.2.1-.3.1-.7 0-.9l-.3-.1z"/></svg></a><a href="mailto:${EMAIL}" aria-label="E-mail" title="${EMAIL}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4 7l8 6 8-6"/></svg></a></div><p class="sm" style="margin-top:12px">@maiedesign</p></div>
-<div><h5>Estúdio</h5><a href="#outros-servicos">Outros serviços</a><a href="#prebriefing">Pré-briefing</a><a href="#entrar">Área do estúdio</a></div>
+<div><h5>Estúdio</h5><a href="#outros-servicos">Outros serviços</a><a href="#prebriefing">Pré-briefing</a><a href="https://studio.maiedesign.com.br/" target="_blank" rel="noopener">Área do estúdio</a></div>
 </div><div class="foot-bot"><span>© ${new Date().getFullYear()} Maiê Design Studio. Todos os direitos reservados.</span><button data-scroll="top">Voltar ao topo ↑</button></div></footer>`}
 const waLink=(msg='Oi, May! Vi a página do Maiê Studio e quero criar a minha marca. Podemos conversar?')=>`https://wa.me/${WHATS}?text=${encodeURIComponent(msg)}`;
 const WA_ICON='<svg viewBox="0 0 24 24" fill="#25D366" aria-hidden="true"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.4c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l2 1c.3.1.5.2.5.3.1.1.1.6-.2 1.2z"/></svg>';
@@ -834,7 +634,7 @@ const OUTROS=[
 
 function renderPublic(){
   document.title='Maiê Design Studio — Sua marca fala antes de você';
-  const ativosP=DB.pacotes.filter(p=>p.ativo);
+  const ativosP=PACOTES_PUB;
   const recog=[
     ['Meu negócio cresceu, a marca não.','Você evoluiu, mas a identidade ainda é a do começo — e já não conta quem você é hoje.'],
     ['Cada post parece de uma marca diferente.','Falta um sistema: cores, letras e linguagem que façam tudo parecer da mesma família.'],
@@ -981,7 +781,7 @@ async function chSend(){
   await chSay('Enviando suas informações para o estúdio…');
   if(PREBRIEF_ENDPOINT){try{await fetch(PREBRIEF_ENDPOINT,{method:'POST',mode:'no-cors',body:new URLSearchParams({...r,entregas:r.entregas.join(', ')})});ok=true}catch(err){}}
   if(!ok&&!window.claude){cs.busy=false;await chSay('Não consegui enviar agora 😕 Verifique a sua conexão e tente novamente, ou fale direto comigo pelo WhatsApp.');chOpts([{t:'Tentar novamente',v:'__ok',cls:'go'},{t:'Chamar no WhatsApp',v:'__wa',cls:'ghost'}]);return}
-  DB.prebriefings.unshift({...r,enviado:ok});save();cs.done=true;chProg();
+  cs.done=true;chProg();
   await chSay(['Tudo certo! Obrigada, '+r.nome.split(' ')[0]+' 💌','A equipe do estúdio entrará em contato em breve.']);
   cs.busy=false;chOpts([{t:'Chamar no WhatsApp',v:'__wa',cls:'ghost'},{t:'Fechar',v:'__close',cls:'go'}]);chInput(false,{});$('.mch-in input',chEl()).placeholder='Conversa concluída'}
 function chReset(){cs.i=-1;cs.d={};cs.sel=[];cs.started=false;cs.done=false;cs.busy=false;$('.mch-log',chEl()).innerHTML='';chProg();chStart()}
@@ -1011,7 +811,7 @@ function initChat(){if(chEl())return;
   addEventListener('keydown',e=>{if(e.key==='Escape'&&cs.open)closeChat()});
   document.addEventListener('click',e=>{const a=e.target.closest('a[href="#prebriefing"]');if(a){e.preventDefault();openChat()}});
   setTimeout(()=>{let seen=false;try{seen=sessionStorage.getItem('maie:tip')}catch(e){}if(!seen&&!cs.open&&!c.hidden)$('.mch-tip',c).hidden=false},3500)}
-function chatSync(r){initChat();const base=r.split('-')[0];const priv=PRIV.includes(base)||r.startsWith('projeto-')||r.startsWith('cliente-')||r==='entrar';chEl().hidden=priv;if(priv&&cs.open)closeChat()}
+function chatSync(){initChat();chEl().hidden=false}
 function renderOutros(){
   document.title='Outros serviços — Maiê Design Studio';
   $('#root').innerHTML=`<div class="pub">${pubNav()}
@@ -1036,536 +836,9 @@ function renderOutros(){
 }
 function renderThanks(){$('#root').innerHTML=`<div class="pub">${pubNav()}<div class="center-page"><div><img class="mono" src="${IMG.sub}" alt=""><h1>Obrigada por <em>compartilhar</em></h1><p>Recebi suas respostas. Em breve entro em contato para a gente marcar a nossa conversa.</p><a class="pill primary" href="#propostas">Voltar ao início</a></div></div></div>`}
 function render404(){$('#root').innerHTML=`<div class="pub">${pubNav()}<div class="center-page"><div><h1 style="font-size:clamp(120px,22vw,300px)">4<em>0</em>4</h1><p>Essa página não existe — ou mudou de lugar. Vamos voltar para onde a marca fala por você?</p><a class="pill primary" href="#propostas">Ir para o início</a></div></div></div>`}
-function renderLogin(){
-  $('#root').innerHTML=`<div class="login"><div class="login-art"><img class="bg" src="${IMG.port}" alt=""><h2>As coisas boas<br>ganham forma<br><em>aos poucos.</em></h2></div>
-  <div class="login-box"><img src="${IMG.logoD}" alt="maiê design"><h1>Espaço privado</h1><p>Digite a senha administrativa para entrar no estúdio.</p>
-  <form id="lf" class="fld" style="gap:12px"><label for="pw">Senha</label><input id="pw" type="password" autocomplete="current-password" required><span class="errmsg hidden" id="lerr">Senha incorreta. Tente novamente.</span><button class="pill primary" style="justify-content:center;margin-top:8px">Entrar <span class="arr">→</span></button></form>
-  <a class="back" href="#propostas">← Voltar ao site</a></div></div>`;
-  $('#lf').onsubmit=async e=>{e.preventDefault();let okp=false;try{okp=(await sha256($('#pw').value))===(DB.config.senhaHash||SENHA_HASH)}catch(err){}if(okp){mem.auth=true;try{sessionStorage.setItem('maie:auth','1')}catch(e){}go('painel')}else{$('#lerr').classList.remove('hidden');$('#pw').parentElement.classList.add('err')}};
-}
 
-/* =========================================================
-   APP (área interna)
-   ========================================================= */
-const ICO={
- painel:'<path d="M3 12l9-8 9 8M5 10v10h14V10"/>',projetos:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/>',tarefas:'<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/>',clientes:'<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7M17 4a4 4 0 010 8M22 21c0-3-2-5-4-6"/>',agenda:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',financeiro:'<path d="M12 2v20M17 6H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',pacotes:'<path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/>',prebriefings:'<path d="M4 4h16v12H8l-4 4z"/>',importar:'<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',configuracoes:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7 1.1V21a2 2 0 11-4 0v-.1A1.6 1.6 0 009 19.4a1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1A1.6 1.6 0 003 15.4 1.6 1.6 0 001.6 14H1.5a2 2 0 110-4h.1A1.6 1.6 0 003.1 9a1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1A1.6 1.6 0 007.4 4.6 1.6 1.6 0 009 3.1V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8 1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/>'};
-const ico=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICO[k]}</svg>`;
-const UI={pView:'cards',pf:{q:'',etapa:'',cli:'',pac:'',prazo:'',fin:''},tView:'projeto',tf:{q:'',etapa:'',prj:''},cView:'cards',cq:'',calMode:'mes',calDate:today(),finMonth:ym(today())};
-
-function renderApp(r){
-  const base=r.split('-')[0];
-  const active=base==='projeto'?'projetos':base==='cliente'?'clientes':base==='briefings'?'importar':base;
-  const nav=(k,l,cnt)=>`<a href="#${k}" class="${active===k?'on':''}">${ico(k)}${l}${cnt?`<span class="cnt">${cnt}</span>`:''}</a>`;
-  if(!$('.app')){
-    $('#root').innerHTML=`<div class="app" data-theme="${DB.config.tema}"><div class="scrim"></div><aside class="side"></aside><main class="main"><div class="topbar"><button class="btn ic" id="mbtn" aria-label="Menu">☰</button><img src="${IMG.logo}" alt="maiê"><span></span></div><div id="view"></div><div class="app-foot">MAIÊ DESIGN STUDIO · TRABALHO FEITO COM CUIDADO · BRASIL</div></main></div>`;
-    $('#mbtn').onclick=()=>$('.app').classList.add('menu');
-    $('.scrim').onclick=()=>$('.app').classList.remove('menu');
-  }
-  $('.app').classList.remove('menu');
-  $('.app').dataset.theme=DB.config.tema;
-  $('.side').innerHTML=`<div class="brand"><img src="${IMG.logoC}" alt="maiê"></div><div class="priv">Espaço privado</div>
-  <h6>Visão geral</h6>${nav('painel','Painel')}
-  <h6>Estúdio</h6>${nav('projetos','Projetos')}${nav('tarefas','Tarefas e entregas',tarefasAbertas().length)}${nav('clientes','Clientes')}${nav('agenda','Agenda')}
-  <h6>Gestão</h6>${nav('financeiro','Financeiro')}${nav('pacotes','Pacotes')}${nav('prebriefings','Pré-briefings',preNovos()||'')}${nav('importar','Importar briefings')}
-  <h6>&nbsp;</h6>${nav('configuracoes','Configurações')}
-  <div class="foot"><div class="acct"><div class="av">M</div><div><b>May</b><small>Administradora</small></div><button id="sair">Sair</button></div>
-  <div class="row" style="justify-content:space-between;margin-bottom:14px"><span class="sm" style="opacity:.7">Tema escuro</span><button class="switch ${DB.config.tema==='dark'?'on':''}" id="tg" aria-label="Alternar tema"></button></div>
-  <div class="tag">MAIÊ DESIGN STUDIO<br>Trabalho feito com cuidado · Brasil</div></div>`;
-  $('#sair').onclick=logout;
-  $('#tg').onclick=()=>{DB.config.tema=DB.config.tema==='dark'?'light':'dark';save();renderApp(location.hash.slice(1))};
-  const V=$('#view');
-  const views={painel:vPainel,projetos:vProjetos,tarefas:vTarefas,clientes:vClientes,agenda:vAgenda,financeiro:vFinanceiro,pacotes:vPacotes,prebriefings:vPre,importar:vImportar,briefings:vBriefings,configuracoes:vConfig};
-  if(r.startsWith('projeto-'))return vProjeto(V,r.slice(8));
-  if(r.startsWith('cliente-'))return vCliente(V,r.slice(8));
-  views[base](V);
-  checkAlerts();
-}
-function logout(){mem.auth=false;try{sessionStorage.removeItem('maie:auth')}catch(e){}go('propostas')}
-const refresh=()=>renderApp(location.hash.slice(1));
-
-/* ---------- alertas de prazo ---------- */
-function checkAlerts(){
-  const seen=store.get('alertas',{});let ch=false;
-  prazoAlertas().forEach(p=>{const k=p.id+'|'+p.prazo;if(!seen[k]){seen[k]=1;ch=true;toast(`${p.nome}: prazo ${prazoTxt(p)} (${fd(p.prazo)})`,'warn')}});
-  if(ch)store.set('alertas',seen);
-}
-setInterval(()=>{if(authed()&&$('.app')){checkAlerts();if(location.hash==='#painel')refresh()}},30*60*1000);
-
-/* ---------- 1. Painel ---------- */
-function vPainel(V){
-  const H=new Date().getHours(),sau=H<12?'Bom dia':H<18?'Boa tarde':'Boa noite';
-  const dia=new Date().toLocaleDateString('pt-BR',{weekday:'long'});
-  const at=ativos(),and=at.filter(p=>p.etapa==='Em andamento'),agu=DB.projetos.filter(p=>p.etapa==='Aguardando cliente'),con=DB.projetos.filter(p=>p.etapa==='Concluído');
-  const entConc=DB.projetos.flatMap(p=>p.entregaveis).filter(e=>e.status==='Concluída').length;
-  const venc=at.filter(p=>p.prazo&&p.prazo<today()),breve=at.filter(p=>p.prazo&&p.prazo>=today()&&diff(p.prazo,today())<=DB.config.alerta);
-  const al=prazoAlertas();
-  const pags=DB.projetos.filter(p=>p.cobranca!=='permuta').flatMap(p=>p.pagamentos.map(x=>({...x,p})));
-  const recMes=pags.filter(x=>x.pago&&ym(x.pago)===ym(today())).reduce((a,x)=>a+ +x.valor,0);
-  const pend=pags.filter(x=>!x.pago),atr=pend.filter(x=>x.venc<today());
-  const lista=tarefasAbertas().sort((a,b)=>(a.p.prazo||'9').localeCompare(b.p.prazo||'9')).slice(0,6);
-  V.innerHTML=`<div class="ph"><div><h1>${sau}, <em>May.</em></h1><p style="text-transform:capitalize">${dia}</p></div><div class="acts"><a class="btn pri" href="#projetos">Ver projetos →</a></div></div>
-  <div class="grid" style="gap:16px">
-  <div class="welcome"><img class="mono" src="${IMG.subC}" alt=""><div><h2>As coisas boas <em>ganham forma aos poucos.</em></h2><p>${new Date().toLocaleDateString('pt-BR',{day:'numeric',month:'long',year:'numeric'})}</p></div>
-  <div class="nums"><div><b>${at.length}</b><span>projetos ativos</span></div><div><b>${entConc}</b><span>entregas concluídas</span></div></div></div>
-  ${al.length?`<div class="alert"><span class="ico">⏰</span><div><b>${al.length} projeto${al.length>1?'s':''} perto do prazo (próximos ${DB.config.alerta} dias)</b><ul>${al.map(p=>`<li><a href="#projeto-${p.id}">${h(p.nome)}</a> · <span class="mut">${prazoTxt(p)}</span></li>`).join('')}</ul></div></div>`:''}
-  <h3 class="serif" style="font-size:30px;margin-top:10px">O estúdio, agora</h3>
-  <div class="grid g4">
-    <div class="card kpi"><b>${at.length}</b><span>Projetos ativos</span><small>${and.length} em andamento</small></div>
-    <div class="card kpi"><b>${agu.length}</b><span>Aguardando cliente</span><small>retorno pendente</small></div>
-    <div class="card kpi"><b>${con.length}</b><span>Concluídos</span><small>${entConc} entregas finalizadas</small></div>
-    <div class="card kpi ${venc.length?'warn':''}"><b>${venc.length}</b><span>Prazo vencido</span><small>${breve.length} vencem em breve</small></div>
-  </div>
-  <div class="grid" style="grid-template-columns:1.4fr 1fr">
-    <div class="card"><h3>Em andamento <a class="link sm" href="#projetos" style="text-transform:none;letter-spacing:0">ver todos</a></h3><div class="list">${at.slice(0,5).map(p=>`<div class="it" style="cursor:pointer" onclick="go('projeto-${p.id}')"><div class="av" style="background:${colorOf(p.id)}">${ini(p.nome)}</div><div style="flex:1;min-width:0"><b>${h(p.nome)}</b><div class="sm mut">${h(cli(p.clienteId)?.nome||'—')} · ${h(pac(p.pacoteId)?.nome||'Projeto personalizado')}</div><div class="prog" style="margin-top:8px"><i style="width:${progresso(p)}%"></i></div></div><div style="text-align:right">${etChip(p.etapa)}<div class="sm mut" style="margin-top:6px">${fd(p.prazo)} · ${progresso(p)}%</div></div></div>`).join('')||'<div class="empty"><b>Nada em andamento</b>Que tal começar um projeto novo?</div>'}</div></div>
-    <div class="card"><h3>Na sua lista</h3>${lista.length?lista.map(t=>`<div class="chk"><div class="t"><b style="font-weight:500">${h(t.txt)}</b><div class="sm mut">${h(t.p.nome)} · ${t.status}</div></div><button class="btn sm" data-adv="${t.p.id}|${t.id}">${t.status==='Aguardando aprovação'?'Concluir':'Avançar'} →</button></div>`).join(''):'<div class="empty"><b>Tudo em dia</b>Nenhuma tarefa aberta.</div>'}</div>
-  </div>
-  <h3 class="serif" style="font-size:30px;margin-top:10px">Movimento financeiro</h3>
-  <div class="grid g3">
-    <div class="card kpi"><b>${brl(recMes)}</b><span>Recebido em ${MESES[new Date().getMonth()].toLowerCase()}</span></div>
-    <div class="card kpi"><b>${brl(pend.reduce((a,x)=>a+ +x.valor,0))}</b><span>A receber</span><small>${pend.length} pagamento${pend.length!==1?'s':''} pendente${pend.length!==1?'s':''}</small></div>
-    <div class="card kpi ${atr.length?'warn':''}"><b>${brl(atr.reduce((a,x)=>a+ +x.valor,0))}</b><span>Em atraso</span><small>${atr.length} parcela${atr.length!==1?'s':''}</small></div>
-  </div>
-  <div class="card" style="display:flex;gap:30px;flex-wrap:wrap;align-items:center"><b class="sm" style="letter-spacing:.12em;text-transform:uppercase;color:var(--mut)">Prazos</b>
-    <span><b style="color:#C0392B">${venc.length}</b> vencido${venc.length!==1?'s':''}: ${venc.map(p=>`<a class="link" href="#projeto-${p.id}">${h(p.nome)}</a>`).join(', ')||'<span class="mut">nenhum</span>'}</span>
-    <span><b style="color:var(--gold)">${breve.length}</b> vencem em breve: ${breve.map(p=>`<a class="link" href="#projeto-${p.id}">${h(p.nome)}</a>`).join(', ')||'<span class="mut">nenhum</span>'}</span></div>
-  </div>`;
-  $$('[data-adv]',V).forEach(b=>b.onclick=()=>{const [pid,eid]=b.dataset.adv.split('|');const e=prj(pid).entregaveis.find(x=>x.id===eid);e.status=T_ETAPAS[Math.min(3,T_ETAPAS.indexOf(e.status)+1)];save();toast(`“${e.txt}” → ${e.status}`);refresh()});
-}
-
-/* ---------- 2. Projetos ---------- */
-function projForm(p={}){
-  const t=today();p={inicio:t,prazo:addDays(t,15),cobranca:'dinheiro',etapa:'Não iniciado',...p};
-  return `<div class="mgrid">${fld('nome','Nome do projeto',p.nome,'text','required full')}
-  ${sel('clienteId','Cliente',[['','— Selecione —'],...DB.clientes.map(c=>[c.id,c.nome+' · '+c.empresa])],p.clienteId)}
-  ${sel('pacoteId','Pacote',[['','Projeto personalizado'],...DB.pacotes.map(x=>[x.id,x.nome])],p.pacoteId)}
-  ${fld('valor','Valor (R$)',p.valor??'','number','step="0.01" min="0"')}
-  ${sel('cobranca','Tipo de cobrança',[['dinheiro','Dinheiro'],['permuta','Permuta']],p.cobranca)}
-  ${fld('inicio','Início',p.inicio,'date')}${fld('briefing','Data do briefing',p.briefing||'','date')}
-  ${fld('prazo','Prazo',p.prazo,'date')}${sel('etapa','Etapa',ETAPAS,p.etapa)}
-  ${area('descricao','Descrição',p.descricao)}${area('notas','Notas internas',p.notas)}</div>`;
-}
-function novoProjeto(pre={}){
-  const m=modal('Novo projeto',projForm(pre),fd=>{
-    if(!fd.clienteId){toast('Escolha um cliente','err');return false}
-    const pk=pac(fd.pacoteId);
-    const p={id:uid(),...fd,valor:+fd.valor||(pk?pk.valor:0),pacoteId:fd.pacoteId||null,entregaveis:(pk?pk.entregaveis:[]).map(txt=>({id:uid(),txt,status:'A fazer',extra:false,prazo:null})),pagamentos:[]};
-    DB.projetos.unshift(p);save();toast('Projeto criado');go('projeto-'+p.id)},'Criar projeto');
-  const ps=$('[name=pacoteId]',m),vv=$('[name=valor]',m);ps.onchange=()=>{const pk=pac(ps.value);if(pk&&!vv.value)vv.value=pk.valor};
-}
-function filtraProj(){
-  const f=UI.pf,q=f.q.toLowerCase();
-  return DB.projetos.filter(p=>{
-    const c=cli(p.clienteId);
-    if(q&&!(p.nome.toLowerCase().includes(q)||(c&&(c.nome+' '+c.empresa).toLowerCase().includes(q))))return false;
-    if(f.etapa&&p.etapa!==f.etapa)return false;
-    if(f.cli&&p.clienteId!==f.cli)return false;
-    if(f.pac&&(f.pac==='custom'?p.pacoteId:p.pacoteId!==f.pac))return false;
-    if(f.prazo==='atrasados'&&!(p.prazo&&p.prazo<today()&&p.etapa!=='Concluído'))return false;
-    if(f.prazo==='proximos'&&!(p.prazo&&p.prazo>=today()&&diff(p.prazo,today())<=DB.config.alerta))return false;
-    if(f.prazo==='sem'&&p.prazo)return false;
-    if(f.fin&&fin(p)!==f.fin)return false;
-    return true});
-}
-function vProjetos(V){
-  const f=UI.pf,list=filtraProj(),nf=Object.values(f).filter(Boolean).length;
-  const pcard=p=>{const c=cli(p.clienteId),s=p.valor-recebido(p);return `<div class="card pc" onclick="go('projeto-${p.id}')"><div class="row" style="justify-content:space-between"><div class="av" style="background:${colorOf(p.id)}">${ini(p.nome)}</div>${etChip(p.etapa)}</div>
-    <h4>${h(p.nome)}</h4><div class="sm mut">${h(c?.nome||'—')} · ${h(pac(p.pacoteId)?.nome||'Projeto personalizado')}</div>
-    <div class="row" style="margin-top:14px"><div class="prog" style="flex:1"><i style="width:${progresso(p)}%"></i></div><span class="sm">${progresso(p)}%</span></div>
-    <div class="meta"><span>Prazo ${fd(p.prazo)}</span><span>${p.cobranca==='permuta'?'<span class="chipx f-Permuta"><i></i>Permuta</span>':'Saldo '+brl(s)}</span></div></div>`};
-  let body='';
-  if(!list.length)body=`<div class="empty"><b>Nenhum projeto encontrado</b>Ajuste os filtros ou crie um projeto novo.</div>`;
-  else if(UI.pView==='cards')body=`<div class="pcards">${list.map(pcard).join('')}</div>`;
-  else if(UI.pView==='kanban')body=`<div class="kanban">${ETAPAS.map(e=>{const it=list.filter(p=>p.etapa===e);return `<div class="kcol" data-col="${e}"><h5>${etChip(e)}<span class="mut">${it.length}</span></h5>${it.map(p=>`<div class="kcard" draggable="true" data-id="${p.id}"><b>${h(p.nome)}</b><div class="sm mut">${h(cli(p.clienteId)?.nome||'')}</div><div class="prog" style="margin:10px 0 6px"><i style="width:${progresso(p)}%"></i></div><div class="sm mut row" style="justify-content:space-between"><span>${fd(p.prazo)}</span>${finChip(p)}</div></div>`).join('')}</div>`}).join('')}</div>`;
-  else body=`<div class="card tbwrap" style="padding:6px"><table class="tb"><thead><tr><th>Projeto</th><th>Cliente</th><th>Pacote</th><th>Etapa</th><th>Progresso</th><th>Prazo</th><th>Saldo</th><th>Financeiro</th></tr></thead><tbody>${list.map(p=>`<tr class="click" onclick="go('projeto-${p.id}')"><td><b>${h(p.nome)}</b></td><td>${h(cli(p.clienteId)?.nome||'—')}</td><td>${h(pac(p.pacoteId)?.nome||'Personalizado')}</td><td>${etChip(p.etapa)}</td><td style="min-width:110px"><div class="prog"><i style="width:${progresso(p)}%"></i></div></td><td>${fd(p.prazo)}</td><td>${p.cobranca==='permuta'?'—':brl(p.valor-recebido(p))}</td><td>${finChip(p)}</td></tr>`).join('')}</tbody></table></div>`;
-  V.innerHTML=`<div class="ph"><div><h1>Projetos</h1><p>${DB.projetos.length} no total · ${ativos().length} ativos</p></div><div class="acts"><div class="seg">${['cards','kanban','lista'].map(v=>`<button class="${UI.pView===v?'on':''}" data-v="${v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div><button class="btn pri" id="np">+ Novo projeto</button></div></div>
-  <div class="toolbar"><input placeholder="Buscar projeto ou cliente…" id="pq" value="${h(f.q)}">
-  <select data-f="etapa"><option value="">Todas as etapas</option>${ETAPAS.map(e=>`<option ${f.etapa===e?'selected':''}>${e}</option>`).join('')}</select>
-  <select data-f="cli"><option value="">Todos os clientes</option>${DB.clientes.map(c=>`<option value="${c.id}" ${f.cli===c.id?'selected':''}>${h(c.nome)}</option>`).join('')}</select>
-  <select data-f="pac"><option value="">Todos os pacotes</option>${DB.pacotes.map(c=>`<option value="${c.id}" ${f.pac===c.id?'selected':''}>${h(c.nome)}</option>`).join('')}<option value="custom" ${f.pac==='custom'?'selected':''}>Personalizado</option></select>
-  <select data-f="prazo"><option value="">Qualquer prazo</option><option value="atrasados" ${f.prazo==='atrasados'?'selected':''}>Atrasados</option><option value="proximos" ${f.prazo==='proximos'?'selected':''}>Próximos ${DB.config.alerta} dias</option><option value="sem" ${f.prazo==='sem'?'selected':''}>Sem prazo</option></select>
-  <select data-f="fin"><option value="">Situação financeira</option>${Object.keys(finCls).map(x=>`<option ${f.fin===x?'selected':''}>${x}</option>`).join('')}</select>
-  <span class="sm mut">${list.length} projeto${list.length!==1?'s':''}</span>${nf?'<button class="btn sm" id="clr">Limpar filtros</button>':''}</div>${body}`;
-  $$('.seg button',V).forEach(b=>b.onclick=()=>{UI.pView=b.dataset.v;vProjetos(V)});
-  $('#np').onclick=()=>novoProjeto();
-  const pq=$('#pq');pq.oninput=()=>{UI.pf.q=pq.value;vProjetos(V);const n=$('#pq');n.focus();n.setSelectionRange(n.value.length,n.value.length)};
-  $$('[data-f]',V).forEach(s=>s.onchange=()=>{UI.pf[s.dataset.f]=s.value;vProjetos(V)});
-  $('#clr')&&($('#clr').onclick=()=>{UI.pf={q:'',etapa:'',cli:'',pac:'',prazo:'',fin:''};vProjetos(V)});
-  $$('.kcard',V).forEach(k=>k.ondragstart=e=>e.dataTransfer.setData('text',k.dataset.id));
-  $$('.kcol',V).forEach(c=>{c.ondragover=e=>{e.preventDefault();c.classList.add('over')};c.ondragleave=()=>c.classList.remove('over');c.ondrop=e=>{e.preventDefault();const p=prj(e.dataTransfer.getData('text'));if(p&&p.etapa!==c.dataset.col){p.etapa=c.dataset.col;save();toast(`${p.nome} → ${p.etapa}`)}refresh()}});
-}
-
-/* ---------- Detalhe do projeto ---------- */
-function vProjeto(V,id){
-  const p=prj(id);if(!p){V.innerHTML='<div class="empty"><b>Projeto não encontrado</b><a class="link" href="#projetos">Voltar aos projetos</a></div>';return}
-  const c=cli(p.clienteId),rec=recebido(p),perm=p.cobranca==='permuta',pr=progresso(p);
-  const base=p.entregaveis.filter(e=>!e.extra),ext=p.entregaveis.filter(e=>e.extra);
-  const ck=e=>`<div class="chk ${e.status==='Concluída'?'done':''}"><input type="checkbox" data-ck="${e.id}" ${e.status==='Concluída'?'checked':''}><span class="t">${h(e.txt)}</span><span class="chipx sm">${e.status}</span><button class="btn ic sm" data-ed="${e.id}" title="Editar">✎</button></div>`;
-  const br=c&&DB.briefings[c.id];
-  V.innerHTML=`<a class="link sm" href="#projetos">← Projetos</a>
-  <div class="ph" style="margin-top:10px"><div><h1>${h(p.nome)}</h1><p>${c?`<a class="link" href="#cliente-${c.id}">${h(c.nome)} · ${h(c.empresa)}</a>`:'Sem cliente'} · ${h(pac(p.pacoteId)?.nome||'Projeto personalizado')}</p></div>
-  <div class="acts"><select class="btn" id="etp">${ETAPAS.map(e=>`<option ${e===p.etapa?'selected':''}>${e}</option>`).join('')}</select><button class="btn" id="ed">Editar</button><button class="btn danger" id="del">Excluir</button></div></div>
-  <div class="grid" style="grid-template-columns:auto 1fr;align-items:stretch">
-    <div class="card" style="display:grid;place-items:center;gap:8px"><div class="ring" style="--p:${pr}"><div>${pr}%</div></div><span class="sm mut">progresso</span></div>
-    <div class="grid g4">
-      <div class="card kpi"><b style="font-size:32px">${brl(p.valor)}</b><span>${perm?'Valor de referência':'Valor do projeto'}</span></div>
-      <div class="card kpi"><b style="font-size:32px">${perm?'—':brl(rec)}</b><span>Recebido em dinheiro</span></div>
-      <div class="card kpi"><b style="font-size:32px">${perm?'—':brl(p.valor-rec)}</b><span>Saldo em dinheiro</span></div>
-      <div class="card kpi"><div style="margin:8px 0 12px">${finChip(p)}</div><span>Situação financeira</span></div>
-    </div></div>
-  <div class="card row" style="margin-top:16px;gap:30px;flex-wrap:wrap"><span><span class="mut sm">Início</span><br><b>${fdl(p.inicio)}</b></span><span><span class="mut sm">Briefing</span><br><b>${fdl(p.briefing)}</b></span><span><span class="mut sm">Prazo</span><br><b>${fdl(p.prazo)}</b> <span class="sm mut">(${prazoTxt(p)})</span></span><span><span class="mut sm">Cobrança</span><br><b>${perm?'Permuta':'Dinheiro'}</b></span></div>
-  <div class="grid g2" style="margin-top:16px;align-items:start">
-    <div class="card"><h3>Entregáveis <button class="btn sm" id="addx">+ Item adicional</button></h3>
-      ${base.length?base.map(ck).join(''):'<p class="mut sm">Sem checklist de pacote.</p>'}
-      ${ext.length?`<div class="grp">ITENS ADICIONAIS</div>${ext.map(ck).join('')}`:''}</div>
-    <div class="grid">
-      <div class="card"><h3>Pagamentos ${perm?'':'<button class="btn sm" id="addpg">+ Parcela</button>'}</h3>
-        ${perm?'<p class="mut">Projeto em <b>permuta</b>: não gera pagamento, saldo em dinheiro nem entra no fluxo de caixa.</p>':(p.pagamentos.length?`<table class="tb"><tbody>${[...p.pagamentos].sort((a,b)=>a.venc.localeCompare(b.venc)).map(x=>`<tr><td><b>${h(x.desc)}</b><div class="sm mut">vence ${fdl(x.venc)}</div></td><td>${brl(x.valor)}</td><td style="text-align:right">${x.pago?`<span class="chipx f-Pago"><i></i>Pago ${fd(x.pago)}</span>`:`${x.venc<today()?'<span class="chipx f-Atraso"><i></i>Atrasado</span> ':''}<button class="btn sm pri" data-lanc="${x.id}">Lançar</button>`}</td></tr>`).join('')}</tbody></table>`:'<p class="mut sm">Nenhuma entrada ou parcela cadastrada.</p>')}</div>
-      <div class="card"><h3>Notas internas</h3><p style="white-space:pre-wrap">${h(p.notas)||'<span class="mut">Sem notas.</span>'}</p>${p.descricao?`<p class="sm mut" style="margin-top:10px">${h(p.descricao)}</p>`:''}</div>
-      <div class="card"><h3>Briefing do cliente</h3>${br?`<details class="brief"><summary>Respostas de ${h(c.nome)} · ${fdl(br.data)}</summary><div style="margin-top:14px">${qaHTML(br.r)}</div></details>`:'<p class="mut sm">Nenhum briefing vinculado a este cliente. <a class="link" href="#importar">Importar briefings</a></p>'}</div>
-    </div></div>`;
-  $('#etp').onchange=e=>{p.etapa=e.target.value;save();toast('Etapa alterada para '+p.etapa);refresh()};
-  $('#del').onclick=()=>confirmDel(p.nome,()=>{DB.projetos=DB.projetos.filter(x=>x!==p);save();toast('Projeto excluído');go('projetos')});
-  $('#ed').onclick=()=>modal('Editar projeto',projForm(p),fd=>{
-    if(fd.cobranca==='permuta'&&p.cobranca!=='permuta'&&p.pagamentos.some(x=>x.pago)){toast('Não é possível mudar para permuta: já existem lançamentos em dinheiro.','err');return false}
-    Object.assign(p,fd,{valor:+fd.valor||0,pacoteId:fd.pacoteId||null});save();toast('Projeto atualizado');refresh()});
-  $$('[data-ck]',V).forEach(i=>i.onchange=()=>{const e=p.entregaveis.find(x=>x.id===i.dataset.ck);e.status=i.checked?'Concluída':'A fazer';save();refresh()});
-  $$('[data-ed]',V).forEach(b=>b.onclick=()=>{const e=p.entregaveis.find(x=>x.id===b.dataset.ed);modal('Editar entrega',`<div class="mgrid">${fld('txt','Entrega',e.txt,'text','required full')}${sel('status','Etapa',T_ETAPAS,e.status)}${fld('prazo','Prazo',e.prazo||'','date')}</div><button type="button" class="btn danger sm" id="rmE" style="margin-top:14px">Remover item</button>`,fd=>{Object.assign(e,fd);save();refresh()});$('#rmE').onclick=()=>{p.entregaveis=p.entregaveis.filter(x=>x!==e);save();$('.modal-bg').remove();refresh()}});
-  $('#addx').onclick=()=>modal('Item adicional',`<div class="mgrid">${fld('txt','Entrega','','text','required full')}${fld('prazo','Prazo','','date')}</div>`,fd=>{p.entregaveis.push({id:uid(),txt:fd.txt,status:'A fazer',extra:true,prazo:fd.prazo||null});save();refresh()},'Adicionar');
-  $('#addpg')&&($('#addpg').onclick=()=>modal('Nova parcela',`<div class="mgrid">${fld('desc','Descrição',p.pagamentos.length?'Parcela '+(p.pagamentos.length+1):'Entrada','text','required full')}${fld('valor','Valor (R$)','','number','required step="0.01"')}${fld('venc','Vencimento',today(),'date','required')}</div>`,fd=>{p.pagamentos.push({id:uid(),desc:fd.desc,valor:+fd.valor,venc:fd.venc,pago:null});save();refresh()},'Adicionar'));
-  $$('[data-lanc]',V).forEach(b=>b.onclick=()=>{const x=p.pagamentos.find(y=>y.id===b.dataset.lanc);modal('Lançar pagamento',`<p style="margin-bottom:14px">${h(x.desc)} · <b>${brl(x.valor)}</b></p>${fld('pago','Data do recebimento',today(),'date','required')}`,fd=>{x.pago=fd.pago;save();toast('Pagamento lançado');refresh()},'Lançar')});
-}
-
-/* ---------- 3. Tarefas ---------- */
-function vTarefas(V){
-  const f=UI.tf,q=f.q.toLowerCase();
-  const prjs=DB.projetos.filter(p=>(!f.prj||p.id===f.prj));
-  const all=prjs.flatMap(p=>p.entregaveis.map(e=>({...e,p}))).filter(t=>(!q||t.txt.toLowerCase().includes(q)||t.p.nome.toLowerCase().includes(q))&&(!f.etapa||t.status===f.etapa));
-  let body;
-  if(UI.tView==='projeto'){
-    const gs=prjs.map(p=>({p,its:all.filter(t=>t.p===p)})).filter(g=>g.its.length);
-    body=gs.length?`<div class="grid g2" style="align-items:start">${gs.map(({p,its})=>{const d=p.entregaveis.filter(e=>e.status==='Concluída').length;const row=t=>`<div class="chk ${t.status==='Concluída'?'done':''}"><input type="checkbox" data-ck="${p.id}|${t.id}" ${t.status==='Concluída'?'checked':''}><span class="t">${h(t.txt)}</span><select class="chipx" data-st="${p.id}|${t.id}" style="border:0">${T_ETAPAS.map(s=>`<option ${s===t.status?'selected':''}>${s}</option>`).join('')}</select></div>`;
-      return `<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:6px"><a class="link" href="#projeto-${p.id}"><b>${h(p.nome)}</b></a><span class="sm mut">${d} de ${p.entregaveis.length} concluídos</span></div><div class="prog" style="margin-bottom:8px"><i style="width:${progresso(p)}%"></i></div>${its.filter(t=>!t.extra).map(row).join('')}${its.some(t=>t.extra)?`<div class="grp">ITENS ADICIONAIS</div>${its.filter(t=>t.extra).map(row).join('')}`:''}</div>`}).join('')}</div>`:`<div class="empty"><b>Nenhuma entrega</b>Nada encontrado com esses filtros.</div>`;
-  }else{
-    body=`<div class="kanban" style="grid-template-columns:repeat(4,minmax(230px,1fr))">${T_ETAPAS.map(s=>{const it=all.filter(t=>t.status===s);return `<div class="kcol" data-col="${s}"><h5><span>${s}</span><span class="mut">${it.length}</span></h5>${it.map(t=>`<div class="kcard" draggable="true" data-id="${t.p.id}|${t.id}"><b>${h(t.txt)}</b><div class="sm mut">${h(t.p.nome)}${t.prazo?' · '+fd(t.prazo):''}</div></div>`).join('')}</div>`}).join('')}</div>`;
-  }
-  V.innerHTML=`<div class="ph"><div><h1>Tarefas e <em>entregas</em></h1><p>${tarefasAbertas().length} em aberto</p></div><div class="acts"><div class="seg"><button class="${UI.tView==='projeto'?'on':''}" data-v="projeto">Por projeto</button><button class="${UI.tView==='etapa'?'on':''}" data-v="etapa">Por etapa</button></div><button class="btn pri" id="nt">+ Nova entrega</button></div></div>
-  <div class="toolbar"><input id="tq" placeholder="Buscar entrega ou projeto…" value="${h(f.q)}"><select data-f="etapa"><option value="">Todas as etapas</option>${T_ETAPAS.map(e=>`<option ${f.etapa===e?'selected':''}>${e}</option>`).join('')}</select><select data-f="prj"><option value="">Todos os projetos</option>${DB.projetos.map(p=>`<option value="${p.id}" ${f.prj===p.id?'selected':''}>${h(p.nome)}</option>`).join('')}</select></div>${body}`;
-  $$('.seg button',V).forEach(b=>b.onclick=()=>{UI.tView=b.dataset.v;vTarefas(V)});
-  const tq=$('#tq');tq.oninput=()=>{UI.tf.q=tq.value;vTarefas(V);const n=$('#tq');n.focus();n.setSelectionRange(n.value.length,n.value.length)};
-  $$('[data-f]',V).forEach(s=>s.onchange=()=>{UI.tf[s.dataset.f]=s.value;vTarefas(V)});
-  const get=k=>{const [pid,eid]=k.split('|');return prj(pid).entregaveis.find(e=>e.id===eid)};
-  $$('[data-ck]',V).forEach(i=>i.onchange=()=>{get(i.dataset.ck).status=i.checked?'Concluída':'A fazer';save();refresh()});
-  $$('[data-st]',V).forEach(s=>s.onchange=()=>{get(s.dataset.st).status=s.value;save();refresh()});
-  $$('.kcard',V).forEach(k=>k.ondragstart=e=>e.dataTransfer.setData('text',k.dataset.id));
-  $$('.kcol',V).forEach(c=>{c.ondragover=e=>{e.preventDefault();c.classList.add('over')};c.ondragleave=()=>c.classList.remove('over');c.ondrop=e=>{e.preventDefault();const t=get(e.dataTransfer.getData('text'));if(t){t.status=c.dataset.col;save()}refresh()}});
-  $('#nt').onclick=()=>modal('Nova entrega',`<div class="mgrid">${sel('pid','Projeto',DB.projetos.map(p=>[p.id,p.nome]),f.prj,true)}${fld('txt','Entrega','','text','required full')}${sel('status','Etapa',T_ETAPAS,'A fazer')}${fld('prazo','Prazo','','date')}${area('notas','Notas')}</div>`,fd=>{prj(fd.pid).entregaveis.push({id:uid(),txt:fd.txt,status:fd.status,extra:true,prazo:fd.prazo||null,notas:fd.notas});save();toast('Entrega criada');refresh()},'Criar');
-}
-
-/* ---------- 4. Clientes ---------- */
-const cliForm=c=>`<div class="mgrid">${fld('nome','Nome',c.nome,'text','required')}${fld('empresa','Empresa',c.empresa)}${fld('cidade','Cidade/Estado',c.cidade)}${fld('tel','Telefone',c.tel)}${fld('email','E-mail',c.email,'email')}${fld('ig','Instagram',c.ig)}${fld('site','Site',c.site)}${fld('cargo','Cargo',c.cargo)}${area('notas','Anotações',c.notas)}</div>`;
-const findCli=nome=>DB.clientes.find(c=>c.nome.trim().toLowerCase()===String(nome).trim().toLowerCase());
-const faltando=(c,r)=>CLIKEYS.filter(k=>!c[k]&&r[k]);
-function vincularCliente(r){let c=findCli(r.nome),novo=false;
-  if(!c){c={id:uid(),nome:r.nome,notas:'Cadastrado a partir do briefing do Forms.',desde:r.data||today()};CLIKEYS.forEach(k=>c[k]=r[k]||'');DB.clientes.push(c);novo=true}
-  else faltando(c,r).forEach(k=>c[k]=r[k]);
-  return {c,novo}}
-function dadosHTML(r,cmp){const c=cmp?findCli(r.nome):null;
-  return `<div class="dados">${['nome',...CLIKEYS].map(k=>{const v=r[k],fill=c&&!c[k]&&v,diffv=c&&c[k]&&v&&c[k]!==v;return `<div class="${v?'':'vazio'}"><small>${keyLabel(k)}</small><b>${v?h(v):'não informado'}</b>${fill?'<em class="tagx ok">vai completar o cadastro</em>':diffv?`<em class="tagx">no cadastro: ${h(c[k])}</em>`:''}</div>`}).join('')}</div>`}
-function qaHTML(r){const e=Object.entries(r||{});return e.length?`<ol class="qa">${e.map(([q,a])=>`<li><span class="q">${h(q)}</span><span class="a">${h(a)}</span></li>`).join('')}</ol>`:'<p class="sm mut">Sem perguntas além dos dados do cliente.</p>'}
-function importPlanilha(){
-  const F=getForms();
-  if(!isDemo()&&!F.length)return modal('Importar da planilha',`<p>A planilha conectada ainda não tem respostas sincronizadas.</p><p class="sm mut" style="margin-top:10px">Abra <a class="link" href="#importar">Importar briefings</a> e clique em Sincronizar.</p>`,null);
-  const novos=F.filter((r,i,arr)=>!DB.clientes.some(c=>c.nome.toLowerCase()===r.nome.toLowerCase())&&arr.findIndex(x=>x.nome.toLowerCase()===r.nome.toLowerCase())===i);
-  const compl=F.filter(r=>{const c=findCli(r.nome);return c&&faltando(c,r).length});
-  modal('Importar da planilha',`<p>Li <b>${F.length}</b> respostas ${isDemo()?'<b>de exemplo</b> (nenhuma planilha conectada ainda)':`da planilha <b>${h(SH().titulo||'conectada')}</b>`}.</p><div class="grid g2" style="margin:18px 0"><div class="card kpi"><b>${novos.length}</b><span>clientes novos</span></div><div class="card kpi"><b>${compl.length}</b><span>cadastros a completar</span></div></div><p class="sm mut">Um cliente por nome: homônimos já cadastrados não geram novo cadastro. Nenhum projeto é criado.</p>`,()=>{
-    novos.concat(compl).forEach(vincularCliente);
-    save();toast(`${novos.length} novo(s), ${compl.length} completado(s)`);refresh()},'Confirmar importação');
-}
-function vClientes(V){
-  const q=UI.cq.toLowerCase();
-  const list=DB.clientes.filter(c=>!q||[c.nome,c.empresa,c.cidade,c.email,c.ig].join(' ').toLowerCase().includes(q));
-  const np=c=>DB.projetos.filter(p=>p.clienteId===c.id).length;
-  V.innerHTML=`<div class="ph"><div><h1>Clientes</h1><p>${list.length} pessoa${list.length!==1?'s':''}</p></div><div class="acts"><div class="seg"><button class="${UI.cView==='cards'?'on':''}" data-v="cards">Cartões</button><button class="${UI.cView==='lista'?'on':''}" data-v="lista">Lista</button></div><button class="btn" id="imp">↧ Importar da planilha</button><button class="btn pri" id="nc">+ Novo cliente</button></div></div>
-  <div class="toolbar"><input id="cq" placeholder="Buscar por nome, empresa, cidade, e-mail ou Instagram…" value="${h(UI.cq)}" style="min-width:340px"></div>
-  ${!list.length?'<div class="empty"><b>Nenhum cliente encontrado</b></div>':UI.cView==='cards'?`<div class="ccards">${list.map(c=>`<div class="card cc" onclick="go('cliente-${c.id}')"><div class="av" style="background:${colorOf(c.id)}">${ini(c.nome)}</div><div style="min-width:0"><b>${h(c.nome)}</b><div class="sm mut">${h(c.empresa)}</div><div class="sm mut">${h(c.cidade)}</div><div class="sm" style="margin-top:8px;color:var(--acc)">${h(c.ig)}</div><div class="sm mut" style="margin-top:4px">${np(c)} projeto${np(c)!==1?'s':''}</div></div></div>`).join('')}</div>`:
-  `<div class="card tbwrap" style="padding:6px"><table class="tb"><thead><tr><th>Nome</th><th>Empresa</th><th>Cidade</th><th>E-mail</th><th>Instagram</th><th>Projetos</th></tr></thead><tbody>${list.map(c=>`<tr class="click" onclick="go('cliente-${c.id}')"><td><b>${h(c.nome)}</b></td><td>${h(c.empresa)}</td><td>${h(c.cidade)}</td><td>${h(c.email)}</td><td>${h(c.ig)}</td><td>${np(c)}</td></tr>`).join('')}</tbody></table></div>`}`;
-  $$('.seg button',V).forEach(b=>b.onclick=()=>{UI.cView=b.dataset.v;vClientes(V)});
-  const cq=$('#cq');cq.oninput=()=>{UI.cq=cq.value;vClientes(V);const n=$('#cq');n.focus();n.setSelectionRange(n.value.length,n.value.length)};
-  $('#nc').onclick=()=>modal('Novo cliente',cliForm({}),fd=>{DB.clientes.push({id:uid(),...fd,desde:today()});save();toast('Cliente cadastrado');refresh()});
-  $('#imp').onclick=importPlanilha;
-}
-function vCliente(V,id){
-  const c=cli(id);if(!c){V.innerHTML='<div class="empty"><b>Cliente não encontrado</b></div>';return}
-  const ps=DB.projetos.filter(p=>p.clienteId===id);
-  V.innerHTML=`<a class="link sm" href="#clientes">← Clientes</a>
-  <div class="card" style="margin-top:14px;display:flex;gap:24px;align-items:center;flex-wrap:wrap"><div class="av" style="width:84px;height:84px;border-radius:50%;font-family:var(--serif);font-size:36px;font-weight:400;background:${colorOf(c.id)}">${ini(c.nome)}</div>
-  <div style="flex:1"><h1 class="serif" style="font-size:44px;line-height:1;color:var(--acc2)">${h(c.nome)}</h1><p class="mut">${h(c.empresa)} · Cliente desde ${new Date(parse(c.desde)).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</p></div>
-  <div class="acts row"><button class="btn" id="ed">Editar</button><button class="btn danger" id="del">Excluir</button></div></div>
-  <div class="grid" style="grid-template-columns:1fr 2fr;margin-top:16px;align-items:start">
-   <div class="card"><h3>Contatos</h3><dl class="ans" style="grid-template-columns:90px 1fr;margin:0"><dt>Cidade</dt><dd>${h(c.cidade)||'—'}</dd><dt>Telefone</dt><dd>${h(c.tel)||'—'}</dd><dt>E-mail</dt><dd>${h(c.email)||'—'}</dd><dt>Instagram</dt><dd>${h(c.ig)||'—'}</dd><dt>Site</dt><dd>${h(c.site)||'—'}</dd><dt>Cargo</dt><dd>${h(c.cargo)||'—'}</dd></dl>${c.notas?`<p class="sm" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--ln)">${h(c.notas)}</p>`:''}</div>
-   <div class="card"><h3>Projetos · ${ps.length} <button class="btn sm" id="np">+ Projeto</button></h3>${ps.length?`<div class="list">${ps.map(p=>`<div class="it" style="cursor:pointer" onclick="go('projeto-${p.id}')"><div class="av" style="background:${colorOf(p.id)}">${ini(p.nome)}</div><div style="flex:1"><b>${h(p.nome)}</b><div class="sm mut">${h(pac(p.pacoteId)?.nome||'Projeto personalizado')} · prazo ${fd(p.prazo)}</div></div>${etChip(p.etapa)}</div>`).join('')}</div>`:'<p class="mut">Nenhum projeto ainda.</p>'}</div></div>
-  ${(()=>{const b=DB.briefings[c.id];if(!b)return `<div class="card" style="margin-top:16px"><h3>Briefing</h3><p class="sm mut">Nenhum briefing vinculado. <a class="link" href="#importar">Importar briefings</a></p></div>`;const res=b.rid&&RS()[b.rid];
-    return `<div class="card" style="margin-top:16px"><h3>Briefing · respondido em ${fdl(b.data)} <a class="link sm" href="#importar" style="text-transform:none;letter-spacing:0">ver na importação</a></h3>${res?`<div class="ai" style="margin:0 0 18px"><b>✦ Resumo de identidade</b><p>${h(res.text)}</p></div>`:''}${qaHTML(b.r)}</div>`})()}`;
-  $('#ed').onclick=()=>modal('Editar cliente',cliForm(c),fd=>{Object.assign(c,fd);save();refresh()});
-  $('#del').onclick=()=>confirmDel(c.nome,()=>{DB.clientes=DB.clientes.filter(x=>x!==c);save();go('clientes')});
-  $('#np').onclick=()=>novoProjeto({clienteId:c.id});
-}
-
-/* ---------- 5. Agenda ---------- */
-function vAgenda(V){
-  const d=parse(UI.calDate);
-  const mon=x=>{const y=new Date(x);const k=(y.getDay()+6)%7;y.setDate(y.getDate()-k);return y};
-  let weeks=[];
-  if(UI.calMode==='mes'){let s=mon(new Date(d.getFullYear(),d.getMonth(),1));const end=new Date(d.getFullYear(),d.getMonth()+1,0);while(s<=end){weeks.push(iso(s));s.setDate(s.getDate()+7)}}
-  else weeks=[iso(mon(d))];
-  const t=today();
-  const wk=ws=>{
-    const we=addDays(ws,6);
-    const ps=DB.projetos.filter(p=>p.inicio&&p.prazo&&p.inicio<=we&&p.prazo>=ws).sort((a,b)=>a.inicio.localeCompare(b.inicio));
-    const lanes=[];const bars=ps.map(p=>{const s=Math.max(0,diff(p.inicio,ws)),e=Math.min(6,diff(p.prazo,ws));let l=lanes.findIndex(le=>le<s);if(l<0){l=lanes.length;lanes.push(e)}else lanes[l]=e;
-      return `<div class="bar ${p.inicio<ws?'cl':''} ${p.prazo>we?'cr':''}" style="grid-row:${l+2};grid-column:${s+1}/${e+2};background:${colorOf(p.id)}" title="${h(p.nome)}: ${fdl(p.inicio)} → ${fdl(p.prazo)}" onclick="go('projeto-${p.id}')">${h(p.nome)}</div>`});
-    const days=[...Array(7)].map((_,i)=>addDays(ws,i));
-    return `<div class="wk ${UI.calMode==='semana'?'big':''}"><div class="bgc">${days.map(x=>`<div class="${UI.calMode==='mes'&&parse(x).getMonth()!==d.getMonth()?'out':''} ${x===t?'today':''}"></div>`).join('')}</div>
-    <div class="fg">${days.map((x,i)=>`<div class="dn ${x===t?'today':''}" style="grid-row:1;grid-column:${i+1}"><b style="font-weight:${x===t?700:500}">${parse(x).getDate()}</b></div>`).join('')}${bars.join('')}</div></div>`};
-  const title=UI.calMode==='mes'?`${MESES[d.getMonth()]} <em>${d.getFullYear()}</em>`:`Semana de <em>${fd(weeks[0])}</em>`;
-  V.innerHTML=`<div class="ph"><div><h1>${title}</h1><p class="row"><span class="bar" style="background:var(--acc);display:inline-block;padding:2px 10px">Projeto</span><span class="sm">do início ao prazo</span></p></div>
-  <div class="acts"><div class="seg"><button class="${UI.calMode==='mes'?'on':''}" data-m="mes">Mês</button><button class="${UI.calMode==='semana'?'on':''}" data-m="semana">Semana</button></div>
-  <button class="btn ic" id="prev" aria-label="Anterior">‹</button><button class="btn" id="hoje">Hoje</button><button class="btn ic" id="next" aria-label="Próximo">›</button><button class="btn pri" id="ne">+ Nova entrega</button></div></div>
-  <div class="cal"><div class="cal-h">${['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(x=>`<div>${x}</div>`).join('')}</div>${weeks.map(wk).join('')}</div>`;
-  $$('[data-m]',V).forEach(b=>b.onclick=()=>{UI.calMode=b.dataset.m;vAgenda(V)});
-  const mv=n=>{const x=parse(UI.calDate);if(UI.calMode==='mes'){x.setDate(1);x.setMonth(x.getMonth()+n)}else x.setDate(x.getDate()+7*n);UI.calDate=iso(x);vAgenda(V)};
-  $('#prev').onclick=()=>mv(-1);$('#next').onclick=()=>mv(1);$('#hoje').onclick=()=>{UI.calDate=today();vAgenda(V)};
-  $('#ne').onclick=()=>modal('Nova entrega',`<div class="mgrid">${sel('pid','Projeto',DB.projetos.map(p=>[p.id,p.nome]),'',true)}${fld('txt','Entrega','','text','required full')}${fld('prazo','Prazo',today(),'date')}</div>`,fd=>{prj(fd.pid).entregaveis.push({id:uid(),txt:fd.txt,status:'A fazer',extra:true,prazo:fd.prazo});save();toast('Entrega criada');refresh()},'Criar');
-}
-
-/* ---------- 6. Financeiro ---------- */
-function vFinanceiro(V){
-  const M=UI.finMonth,[yy,mm]=M.split('-').map(Number);
-  const pags=DB.projetos.filter(p=>p.cobranca!=='permuta').flatMap(p=>p.pagamentos.map(x=>({...x,p})));
-  const ent=pags.filter(x=>x.pago&&ym(x.pago)===M),aRec=pags.filter(x=>!x.pago&&ym(x.venc)===M);
-  const sPag=DB.saidas.filter(s=>s.pago&&ym(s.pago)===M),aPag=DB.saidas.filter(s=>!s.pago&&ym(s.venc)===M);
-  const sum=a=>a.reduce((t,x)=>t+ +x.valor,0);
-  const saldo=sum(ent)-sum(sPag);
-  const endM=iso(new Date(yy,mm,0));
-  const acum=sum(pags.filter(x=>x.pago&&x.pago<=endM))-sum(DB.saidas.filter(s=>s.pago&&s.pago<=endM));
-  const prev=saldo+sum(aRec)-sum(aPag);
-  const meses=[...Array(6)].map((_,i)=>{const d=new Date(yy,mm-1-5+i,1);const k=ym(iso(d));return{k,l:MESES[d.getMonth()].slice(0,3),e:sum(pags.filter(x=>x.pago&&ym(x.pago)===k)),s:sum(DB.saidas.filter(x=>x.pago&&ym(x.pago)===k))}});
-  const mx=Math.max(1,...meses.flatMap(m=>[m.e,m.s]));
-  const cats=CATS.map(c=>({c,v:sum([...sPag,...aPag].filter(s=>s.cat===c))})).filter(x=>x.v).sort((a,b)=>b.v-a.v);
-  const cmx=Math.max(1,...cats.map(x=>x.v));
-  const mesSaidas=DB.saidas.filter(s=>ym(s.venc)===M||ym(s.pago||'')===M).sort((a,b)=>a.venc.localeCompare(b.venc));
-  V.innerHTML=`<div class="ph"><div><h1>Financeiro · <em>${MESES[mm-1]} ${yy}</em></h1><p>Entradas de projetos (permutas não entram) e saídas do estúdio</p></div>
-  <div class="acts"><button class="btn ic" id="mp">‹</button><button class="btn" id="mh">Este mês</button><button class="btn ic" id="mn">›</button><button class="btn" id="csv">Exportar CSV</button><button class="btn pri" id="ns">+ Nova saída</button></div></div>
-  <div class="grid g3">
-    <div class="card"><h3>Realizado</h3><div class="row" style="justify-content:space-between"><span>Entradas recebidas</span><b style="color:#2F8A57">${brl(sum(ent))}</b></div><div class="row" style="justify-content:space-between;margin-top:8px"><span>Saídas pagas</span><b style="color:#C0392B">${brl(sum(sPag))}</b></div></div>
-    <div class="card"><h3>Previsão</h3><div class="row" style="justify-content:space-between"><span>A receber</span><b>${brl(sum(aRec))}</b></div><div class="row" style="justify-content:space-between;margin-top:8px"><span>A pagar</span><b>${brl(sum(aPag))}</b></div></div>
-    <div class="card"><h3>Saldos</h3><div class="row" style="justify-content:space-between"><span>Do mês</span><b>${brl(saldo)}</b></div><div class="row" style="justify-content:space-between;margin-top:8px"><span>Acumulado</span><b>${brl(acum)}</b></div><div class="row" style="justify-content:space-between;margin-top:8px"><span>Previsão do mês</span><b style="color:var(--acc)">${brl(prev)}</b></div></div>
-  </div>
-  <div class="grid" style="grid-template-columns:1.5fr 1fr;margin-top:16px;align-items:start">
-    <div class="card"><h3>Entradas x saídas · últimos 6 meses <span class="legend" style="text-transform:none;letter-spacing:0"><span><i style="background:var(--acc)"></i>Entradas</span><span><i style="background:var(--gold)"></i>Saídas</span></span></h3>
-      <div class="chart">${meses.map(m=>`<div class="m"><div class="bs"><i class="e" style="height:${m.e/mx*100}%" title="Entradas ${brl(m.e)}"></i><i class="s" style="height:${m.s/mx*100}%" title="Saídas ${brl(m.s)}"></i></div><span style="${m.k===M?'color:var(--acc);font-weight:700':''}">${m.l}</span></div>`).join('')}</div></div>
-    <div class="card"><h3>Saídas por categoria</h3>${cats.length?cats.map(x=>`<div class="catbar"><span>${x.c}</span><div class="prog"><i style="width:${x.v/cmx*100}%"></i></div><b style="text-align:right">${brl(x.v)}</b></div>`).join(''):'<p class="mut sm">Sem saídas neste mês.</p>'}</div>
-  </div>
-  <div class="grid g2" style="margin-top:16px;align-items:start">
-    <div class="card"><h3>Saídas do mês</h3>${mesSaidas.length?`<div class="tbwrap"><table class="tb"><tbody>${mesSaidas.map(s=>`<tr><td><b>${h(s.desc)}</b><div class="sm mut">${s.cat} · vence ${fd(s.venc)}${s.forma?' · '+h(s.forma):''}</div></td><td>${brl(s.valor)}</td><td style="text-align:right;white-space:nowrap">${s.pago?`<span class="chipx f-Pago"><i></i>Paga ${fd(s.pago)}</span>`:`<button class="btn sm pri" data-pay="${s.id}">Marcar paga</button>`} <button class="btn ic sm" data-es="${s.id}">✎</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><b>Nenhuma saída</b>neste mês.</div>'}</div>
-    <div class="card"><h3>Entradas do mês</h3>${ent.length||aRec.length?`<table class="tb"><tbody>${[...ent,...aRec].map(x=>`<tr><td><b>${h(x.p.nome)}</b><div class="sm mut">${h(x.desc)}</div></td><td>${brl(x.valor)}</td><td style="text-align:right">${x.pago?`<span class="chipx f-Pago"><i></i>${fd(x.pago)}</span>`:`<span class="chipx f-Pendente"><i></i>prev. ${fd(x.venc)}</span>`}</td></tr>`).join('')}</tbody></table>`:'<div class="empty"><b>Sem entradas</b>neste mês.</div>'}</div>
-  </div>
-  <div class="card" style="margin-top:16px"><h3>Contas fixas <span class="row"><button class="btn sm" id="incl">Incluir no mês</button><button class="btn sm" id="nf">+ Conta fixa</button></span></h3>
-    <table class="tb"><thead><tr><th>Nome</th><th>Categoria</th><th>Valor mensal</th><th>Vencimento</th><th>Ativa</th><th></th></tr></thead><tbody>${DB.fixas.map(f=>`<tr><td><b>${h(f.nome)}</b></td><td>${f.cat}</td><td>${brl(f.valor)}</td><td>dia ${f.dia}</td><td><button class="switch ${f.ativa?'on':''}" data-tg="${f.id}"></button></td><td style="text-align:right"><button class="btn ic sm" data-ef="${f.id}">✎</button></td></tr>`).join('')}</tbody></table></div>`;
-  const mv=n=>{const d=new Date(yy,mm-1+n,1);UI.finMonth=ym(iso(d));vFinanceiro(V)};
-  $('#mp').onclick=()=>mv(-1);$('#mn').onclick=()=>mv(1);$('#mh').onclick=()=>{UI.finMonth=ym(today());vFinanceiro(V)};
-  const sForm=s=>`<div class="mgrid">${fld('desc','Descrição',s.desc,'text','required full')}${sel('cat','Categoria',CATS,s.cat)}${fld('valor','Valor (R$)',s.valor??'','number','required step="0.01"')}${fld('venc','Vencimento',s.venc||M+'-10','date','required')}${fld('pago','Pagamento (data)',s.pago||'','date')}${sel('forma','Forma',['Pix','Cartão','Boleto','Dinheiro','Transferência'],s.forma)}</div>`;
-  $('#ns').onclick=()=>modal('Nova saída',sForm({}),fd=>{DB.saidas.push({id:uid(),...fd,valor:+fd.valor,pago:fd.pago||null});save();toast('Saída lançada');refresh()});
-  $$('[data-es]',V).forEach(b=>b.onclick=()=>{const s=DB.saidas.find(x=>x.id===b.dataset.es);const m=modal('Editar saída',sForm(s)+'<button type="button" class="btn danger sm" id="rmS" style="margin-top:12px">Excluir saída</button>',fd=>{Object.assign(s,fd,{valor:+fd.valor,pago:fd.pago||null});save();refresh()});$('#rmS',m).onclick=()=>{m.remove();confirmDel(s.desc,()=>{DB.saidas=DB.saidas.filter(x=>x!==s);save();refresh()})}});
-  $$('[data-pay]',V).forEach(b=>b.onclick=()=>{DB.saidas.find(x=>x.id===b.dataset.pay).pago=today();save();toast('Saída marcada como paga');refresh()});
-  const fForm=f=>`<div class="mgrid">${fld('nome','Nome',f.nome,'text','required full')}${sel('cat','Categoria',CATS,f.cat||'Contas fixas')}${fld('valor','Valor mensal',f.valor??'','number','required step="0.01"')}${fld('dia','Dia de vencimento',f.dia||10,'number','min="1" max="31" required')}</div>`;
-  $('#nf').onclick=()=>modal('Nova conta fixa',fForm({}),fd=>{DB.fixas.push({id:uid(),...fd,valor:+fd.valor,dia:+fd.dia,ativa:true});save();refresh()});
-  $$('[data-ef]',V).forEach(b=>b.onclick=()=>{const f=DB.fixas.find(x=>x.id===b.dataset.ef);modal('Editar conta fixa',fForm(f),fd=>{Object.assign(f,fd,{valor:+fd.valor,dia:+fd.dia});save();refresh()})});
-  $$('[data-tg]',V).forEach(b=>b.onclick=()=>{const f=DB.fixas.find(x=>x.id===b.dataset.tg);f.ativa=!f.ativa;save();refresh()});
-  $('#incl').onclick=()=>{let n=0;DB.fixas.filter(f=>f.ativa).forEach(f=>{if(DB.saidas.some(s=>s.fixa===f.id&&ym(s.venc)===M))return;const dia=Math.min(f.dia,new Date(yy,mm,0).getDate());DB.saidas.push({id:uid(),desc:f.nome,cat:f.cat,valor:f.valor,venc:`${M}-${pad(dia)}`,pago:null,forma:'',fixa:f.id});n++});save();toast(n?`${n} conta(s) fixa(s) incluída(s) em ${MESES[mm-1]}`:'Todas as contas ativas já estavam lançadas');refresh()};
-  $('#csv').onclick=()=>{const rows=[['tipo','descricao','categoria','valor','vencimento','pagamento']];ent.concat(aRec).forEach(x=>rows.push(['entrada',x.p.nome+' - '+x.desc,'Projeto',x.valor,x.venc,x.pago||'']));mesSaidas.forEach(s=>rows.push(['saida',s.desc,s.cat,s.valor,s.venc,s.pago||'']));const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
-    const m=modal(`CSV · ${MESES[mm-1]} ${yy}`,`<p class="sm mut" style="margin-bottom:10px">Copie e cole numa planilha (separador “;”).</p><textarea readonly style="width:100%;height:220px;font-family:monospace;font-size:12px;border:1px solid var(--ln);border-radius:12px;padding:12px;background:var(--bg);color:var(--txt)">${h(csv)}</textarea>`,()=>{navigator.clipboard?.writeText(csv).then(()=>toast('CSV copiado')).catch(()=>toast('Selecione o texto e copie manualmente','err'))},'Copiar CSV')};
-}
-
-/* ---------- 7. Pacotes ---------- */
-function vPacotes(V){
-  const form=p=>`<div class="mgrid">${fld('nome','Nome',p.nome,'text','required')}${fld('valor','Valor (R$)',p.valor??'','number','step="0.01"')}${fld('rotulo','Rótulo exibido',p.rotulo,'text','placeholder="Ex.: 04 materiais gráficos"')}${sel('ativo','Situação',[['1','Ativo'],['0','Inativo']],p.ativo===false?'0':'1',true)}${area('descricao','Descrição',p.descricao)}${fld('categoria','Categoria (aparece acima do nome)',p.categoria||'Identidade visual','text','full')}${area('publico','Para quem é',p.publico)}<div class="fld full"><label>Entregáveis (um por linha)</label><textarea name="ent" rows="7">${h((p.entregaveis||[]).join('\n'))}</textarea></div>${area('bonus','Bônus (use “Título: descrição”)',p.bonus??BONUS_PADRAO)}</div>`;
-  const parseP=fd=>({nome:fd.nome,valor:+fd.valor||0,rotulo:fd.rotulo,capa:fd.capa,ativo:fd.ativo==='1',descricao:fd.descricao,publico:fd.publico,categoria:fd.categoria,bonus:fd.bonus.trim(),entregaveis:fd.ent.split('\n').map(s=>s.trim()).filter(Boolean)});
-  V.innerHTML=`<div class="ph"><div><h1>Pacotes</h1><p>Os ativos aparecem na página pública de propostas. Os entregáveis são copiados para cada projeto novo.</p></div><div class="acts"><a class="btn" href="#propostas" target="_blank">Ver página pública ↗</a><button class="btn pri" id="npk">+ Novo pacote</button></div></div>
-  <div class="pcards">${DB.pacotes.map(p=>`<div class="card">${p.rotulo?`<span class="chipx" style="margin-bottom:12px">${h(p.rotulo)}</span>`:''}
-  <div class="row" style="justify-content:space-between"><h3 class="serif" style="font-size:30px;text-transform:none;letter-spacing:0;color:var(--acc2);margin:0;font-weight:400">${h(p.nome)}</h3><span class="chipx ${p.ativo?'f-Pago':'f-Pendente'}"><i></i>${p.ativo?'Ativo':'Inativo'}</span></div>
-  <b style="font-size:20px">${brl(p.valor)}</b><p class="sm mut" style="margin:8px 0 12px">${h(p.descricao)}</p><ul class="sm" style="padding-left:18px;display:grid;gap:3px">${p.entregaveis.map(e=>`<li>${h(e)}</li>`).join('')}</ul>${p.bonus?`<p class="sm" style="margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--panel2)"><b style="color:var(--acc)">Bônus · </b>${h(p.bonus)}</p>`:''}
-  <div class="row" style="margin-top:16px"><button class="btn sm" data-e="${p.id}">Editar</button><button class="btn sm danger" data-d="${p.id}">Excluir</button></div></div>`).join('')}</div>`;
-  $('#npk').onclick=()=>modal('Novo pacote',form({capa:'rosa'}),fd=>{DB.pacotes.push({id:uid(),...parseP(fd)});save();toast('Pacote criado');refresh()});
-  $$('[data-e]',V).forEach(b=>b.onclick=()=>{const p=pac(b.dataset.e);modal('Editar pacote',form(p)+'<p class="sm mut" style="margin-top:10px">Alterar o pacote não muda projetos já contratados.</p>',fd=>{Object.assign(p,parseP(fd));save();toast('Pacote atualizado');refresh()})});
-  $$('[data-d]',V).forEach(b=>b.onclick=()=>{const p=pac(b.dataset.d);confirmDel(p.nome,()=>{DB.pacotes=DB.pacotes.filter(x=>x!==p);save();refresh()})});
-}
-
-/* ---------- 8. Pré-briefings (formulário público → Google Sheets) ---------- */
-const PB_COLS={data:/^data|carimbo|timestamp/i,id:/^id$/i,nome:/^nome/i,empresa:/empresa/i,email:/e-?mail/i,tel:/telefone|whats/i,cargo:/cargo/i,colab:/colaborador/i,entregas:/entrega/i,invest:/invest/i,origem:/origem|conheceu/i,site:/^site/i,ig:/insta/i};
-const emptyPre=()=>({id:'',titulo:'',aba:'',rows:[],fetchedAt:0,erro:null});
-const PS=()=>DB.preSheet||(DB.preSheet=emptyPre());
-const UIP={busy:false};
-async function syncPre(){const S=PS();if(!S.id||UIP.busy)return;UIP.busy=true;S.erro=null;refresh();
-  try{
-    const meta=await sheetCall('get_spreadsheet',{spreadsheetId:S.id,fields:['properties.title','sheets.properties.title']});const mo=typeof meta==='string'?JSON.parse(meta):meta;
-    S.titulo=mo?.properties?.title||'';const abas=(mo?.sheets||[]).map(x=>x.properties?.title).filter(Boolean);
-    S.aba=abas.find(a=>/pr[eé]-?briefing/i.test(a))||abas[0]||'';
-    const vals=findValues(await sheetCall('get_values',{spreadsheetId:S.id,range:S.aba?`'${S.aba.replace(/'/g,"''")}'`:'A1:Z'}))||[];
-    const head=(vals[0]||[]).map(x=>String(x??'').trim());
-    const idx={};Object.entries(PB_COLS).forEach(([k,re])=>{idx[k]=head.findIndex(h=>re.test(h))});
-    S.rows=vals.slice(1).filter(r=>r.some(c=>String(c??'').trim())).map((r,i)=>{const g=k=>idx[k]>=0?String(r[idx[k]]??'').trim():'';
-      return {id:g('id')||'s'+hash(g('data')+g('email')+i),data:sheetDate(g('data'))||today(),nome:g('nome'),empresa:g('empresa'),email:g('email'),tel:g('tel'),cargo:g('cargo'),colab:g('colab'),entregas:g('entregas').split(/\s*,\s*/).filter(Boolean),invest:g('invest'),origem:g('origem'),site:g('site'),ig:g('ig'),fonte:'planilha'}});
-    S.fetchedAt=Date.now();save();toast(`Pré-briefings sincronizados · ${S.rows.length}`);
-  }catch(e){S.erro={code:e?.code||'upstream_error',message:e?.message||''};save()}
-  UIP.busy=false;refresh()}
-function listPre(){const hid=DB.preHidden||[];const sh=PS().rows||[];const ids=new Set(sh.map(x=>x.id));
-  return [...sh,...DB.prebriefings.filter(p=>!ids.has(p.id))].filter(p=>!hid.includes(p.id)).sort((a,b)=>String(b.data).localeCompare(String(a.data)))}
-const preNovos=()=>{const seen=DB.preSeen||[];return listPre().filter(p=>!seen.includes(p.id)&&!p.lido).length};
-function vPre(V){
-  const S=PS();
-  if(S.id&&podeLer()&&!UIP.busy&&!S.erro&&Date.now()-S.fetchedAt>2*60*1000)setTimeout(syncPre,0);
-  const L=listPre();DB.preSeen=[...new Set([...(DB.preSeen||[]),...L.map(p=>p.id)])];save();
-  const card=!S.id?`<div class="card" style="margin-bottom:18px"><h3>Planilha do pré-briefing</h3>
-      <p class="sm mut" style="margin-bottom:14px">Cole o link da planilha do Google que recebe as respostas do formulário público (a do script “Pré-briefings”). A leitura usa o conector Google Sheets da sua conta.</p>
-      <form id="pshf" class="row" style="flex-wrap:wrap"><input name="link" required placeholder="https://docs.google.com/spreadsheets/d/…" style="flex:1;min-width:260px;background:var(--bg);border:1px solid var(--ln);border-radius:999px;padding:11px 16px;color:var(--txt)"><button class="btn pri">Conectar planilha</button></form></div>`
-    :`<div class="card" style="margin-bottom:18px"><h3>Planilha do pré-briefing <span class="chipx ${S.erro?'f-Atraso':S.fetchedAt?'f-Pago':'f-Pendente'}" style="letter-spacing:0;text-transform:none"><i></i>${S.erro?'Com problema':S.fetchedAt?'Conectada':'Aguardando sincronização'}</span></h3>
-      <div class="row" style="flex-wrap:wrap;gap:12px;justify-content:space-between"><div><b style="font-size:17px">${h(S.titulo||'Planilha de pré-briefings')}</b><div class="sm mut">${(S.rows||[]).length} resposta(s)${S.aba?' · aba “'+h(S.aba)+'”':''} · sincronizada ${agoTxt(S.fetchedAt)} · <a class="link" href="https://docs.google.com/spreadsheets/d/${encodeURIComponent(S.id)}/edit" target="_blank" rel="noopener">abrir no Google Sheets ↗</a></div></div>
-      <div class="row"><button class="btn pri" id="psync" ${UIP.busy?'disabled':''}>${UIP.busy?'Sincronizando…':'↻ Sincronizar'}</button><button class="btn sm" id="ptroca">Trocar planilha</button></div></div>
-      ${S.erro?`<div class="alert" style="margin-top:14px;background:color-mix(in srgb,#C0392B 9%,var(--panel));border-color:color-mix(in srgb,#C0392B 35%,transparent)"><span class="ico">⚠️</span><div><b>Não consegui ler a planilha</b><span class="sm">${h(errMsg(S.erro))}</span></div></div>`:''}</div>`;
-  V.innerHTML=`<div class="ph"><div><h1>Pré-<em>briefings</em></h1><p>Respostas do chat de pré-briefing do site</p></div><div class="acts"><a class="btn" href="#prebriefing" target="_blank">Abrir chat ↗</a></div></div>
-  ${card}
-  ${L.length?`<div class="grid">${L.map(p=>`<div class="card"><div class="row" style="flex-wrap:wrap;gap:18px"><div class="av" style="background:${colorOf(p.id)};border-radius:50%">${ini(p.nome)}</div><div style="flex:1;min-width:200px"><b style="font-size:17px">${h(p.empresa||'—')}</b><div class="sm mut">${h(p.nome)}${p.cargo?' · '+h(p.cargo):''}</div></div><div class="sm">${h(p.email)}<br>${h(p.tel)}</div><span class="sm mut" style="text-align:right">${fdl(p.data)}<br><span class="chipx" style="margin-top:4px">${p.fonte==='planilha'?'planilha':'este navegador'}</span></span></div>
-  <details class="brief"><summary>Ver respostas</summary><dl class="ans"><dt>Entregas</dt><dd>${(p.entregas||[]).map(e=>`<span class="chipx" style="margin:0 4px 4px 0">${h(e)}</span>`).join('')||'—'}</dd><dt>Investimento</dt><dd>${h(p.invest||'—')}</dd><dt>Cargo</dt><dd>${h(p.cargo||'—')}</dd><dt>Colaboradores</dt><dd>${h(p.colab||'—')}</dd><dt>Como conheceu</dt><dd>${h(p.origem||'—')}</dd><dt>Site</dt><dd>${h(p.site||'—')}</dd><dt>Instagram</dt><dd>${h(p.ig||'—')}</dd></dl>
-  <div class="row" style="margin-top:14px"><button class="btn sm pri" data-cc="${p.id}">Cadastrar como cliente</button><button class="btn sm danger" data-dp="${p.id}">${p.fonte==='planilha'?'Ocultar':'Excluir'}</button></div></details></div>`).join('')}</div>`:'<div class="empty"><b>Nenhum pré-briefing recebido</b>Quando alguém preencher “Vamos conversar?”, aparece aqui.</div>'}`;
-  const f=$('#pshf');if(f)f.onsubmit=e=>{e.preventDefault();const id=sheetId(f.link.value);if(!id)return toast('Link de planilha inválido','err');DB.preSheet={...emptyPre(),id};save();syncPre()};
-  $('#psync')&&($('#psync').onclick=syncPre);
-  $('#ptroca')&&($('#ptroca').onclick=()=>modal('Trocar planilha?','<p>A conexão atual será removida. Nada é apagado da planilha.</p>',()=>{DB.preSheet=emptyPre();save();refresh()},'Trocar',{danger:true}));
-  $$('[data-cc]',V).forEach(b=>b.onclick=()=>{const p=L.find(x=>x.id===b.dataset.cc);if(findCli(p.nome))return toast('Já existe um cliente com esse nome','err');DB.clientes.push({id:uid(),nome:p.nome,empresa:p.empresa,cidade:'',tel:p.tel,email:p.email,ig:p.ig,site:p.site,cargo:p.cargo,notas:`Pré-briefing: ${(p.entregas||[]).join(', ')} · ${p.invest}`,desde:today()});save();toast('Cliente cadastrado')});
-  $$('[data-dp]',V).forEach(b=>b.onclick=()=>{const p=L.find(x=>x.id===b.dataset.dp);if(p.fonte==='planilha'){DB.preHidden=[...(DB.preHidden||[]),p.id];save();toast('Ocultado (continua na planilha)');return refresh()}confirmDel('o pré-briefing de '+(p.empresa||p.nome),()=>{DB.prebriefings=DB.prebriefings.filter(x=>x!==p);save();refresh()})});
-}
-
-/* ---------- 9. Importar briefings ---------- */
-const agoTxt=t=>{if(!t)return 'nunca';const m=Math.round((Date.now()-t)/60000);return m<1?'agora mesmo':m<60?`há ${m} min`:m<1440?`há ${Math.round(m/60)} h`:new Date(t).toLocaleDateString('pt-BR')};
-function sheetCard(){
-  const S=SH();
-  if(!S.id)return `<div class="card" style="margin-bottom:18px"><h3>Planilha do Google Sheets</h3>
-    <p class="sm mut" style="margin-bottom:14px">Cole o link da planilha de respostas do seu Google Forms. A leitura usa o conector Google Sheets da sua conta no claude.ai — nada de senha aqui.</p>
-    <form id="shf" class="row" style="flex-wrap:wrap"><input name="link" required placeholder="https://docs.google.com/spreadsheets/d/…" style="flex:1;min-width:260px;background:var(--bg);border:1px solid var(--ln);border-radius:999px;padding:11px 16px;color:var(--txt)"><button class="btn pri">Conectar planilha</button></form>
-</div>`;
-  return `<div class="card" style="margin-bottom:18px"><h3>Planilha do Google Sheets <span class="chipx ${S.erro?'f-Atraso':S.fetchedAt?'f-Pago':'f-Pendente'}" style="letter-spacing:0;text-transform:none"><i></i>${S.erro?'Com problema':S.fetchedAt?'Conectada':'Aguardando 1ª sincronização'}</span></h3>
-    <div class="row" style="flex-wrap:wrap;gap:12px;justify-content:space-between">
-      <div><b style="font-size:17px">${h(S.titulo||'Planilha de briefings')}</b><div class="sm mut">${S.rows.length} resposta${S.rows.length!==1?'s':''} · sincronizada ${agoTxt(S.fetchedAt)} · <a class="link" href="https://docs.google.com/spreadsheets/d/${encodeURIComponent(S.id)}/edit" target="_blank" rel="noopener">abrir no Google Sheets ↗</a></div></div>
-      <div class="row" style="flex-wrap:wrap">${S.abas.length>1?`<label class="sm mut row">Aba <select id="aba" class="btn sm">${S.abas.map(a=>`<option ${a===S.aba?'selected':''}>${h(a)}</option>`).join('')}</select></label>`:''}
-      <button class="btn pri" id="sync" ${UIS.busy?'disabled':''}>${UIS.busy?'Sincronizando…':'↻ Sincronizar agora'}</button><button class="btn sm" id="troca">Trocar planilha</button></div></div>
-    ${S.erro?`<div class="alert" style="margin-top:14px;background:color-mix(in srgb,#C0392B 9%,var(--panel));border-color:color-mix(in srgb,#C0392B 35%,transparent)"><span class="ico">⚠️</span><div><b>Não consegui ler a planilha</b><span class="sm">${h(errMsg(S.erro))}</span></div></div>`:''}
-    ${S.header.length?mapHTML():''}
-  </div>`;
-}
-function mapHTML(){
-  const S=SH(),cols=getCols(),ex=ix=>{const r=S.rows.find(r=>String(r[ix]??'').trim());return r?String(r[ix]).trim():''};
-  const nCli=cols.filter(k=>k!=='q'&&k!=='x').length,nQ=cols.filter(k=>k==='q').length,nX=cols.filter(k=>k==='x').length;
-  const semNome=!cols.includes('nome');
-  return `<details class="brief maptb" style="margin-top:14px" ${UI.mapOpen||semNome||!S.mapOk?'open':''} id="mapd"><summary>Vínculo das perguntas da planilha <span class="sm mut" style="font-weight:400">· ${nCli} dados do cliente · ${nQ} perguntas do briefing${nX?` · ${nX} ignorada${nX>1?'s':''}`:''}</span></summary>
-    <p class="sm mut" style="margin:10px 0 4px">Cada coluna da planilha é uma pergunta do Forms. Ligue as que trazem <b>dados do cliente</b> ao campo certo do cadastro; as demais entram no briefing como pergunta e resposta.</p>
-    ${semNome?'<div class="alert" style="margin:10px 0"><span class="ico">⚠️</span><div><b>Vincule a coluna do nome</b><span class="sm">É pelo nome que a resposta é ligada ao cliente certo (sem duplicar cadastros).</span></div></div>':''}
-    <div class="tbwrap"><table class="tb"><thead><tr><th style="width:40px">#</th><th>Pergunta (coluna da planilha)</th><th>Exemplo de resposta</th><th style="width:250px">Vincular a</th></tr></thead><tbody>
-    ${S.header.map((c,ix)=>{const k=cols[ix];return `<tr class="${k==='q'?'':k==='x'?'ign':'cli'}"><td class="mut">${String.fromCharCode(65+ix%26)}${ix>=26?Math.floor(ix/26):''}</td><td><b style="font-weight:500">${h(c||'(sem título)')}</b></td><td class="sm mut" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(ex(ix))||'—'}</td>
-      <td><select data-col="${ix}" class="btn sm" style="width:100%"><optgroup label="Dados do cliente">${MAPKEYS.map(([kk,l])=>`<option value="${kk}" ${k===kk?'selected':''}>${l}</option>`).join('')}</optgroup><optgroup label="Briefing"><option value="q" ${k==='q'?'selected':''}>Pergunta do briefing</option><option value="x" ${k==='x'?'selected':''}>Ignorar esta coluna</option></optgroup></select></td></tr>`}).join('')}
-    </tbody></table></div>
-    <div class="row" style="justify-content:space-between;margin-top:12px;flex-wrap:wrap"><button class="btn sm" id="mapauto">↺ Detectar de novo</button>${S.mapOk?'<span class="chipx f-Pago"><i></i>Vínculo confirmado</span>':'<button class="btn sm pri" id="mapok">Confirmar vínculo</button>'}</div></details>`;
-}
-function vImportar(V){
-  const S=SH();
-  if(S.id&&podeLer()&&S.fetchedAt&&!S.erro&&!UIS.busy&&Date.now()-S.fetchedAt>10*60*1000)setTimeout(syncSheet,0);
-  const di=DB.config.dataForms;
-  const F=getForms();
-  const resp=di?F.filter(r=>!r.data||r.data>=di):[];
-  const imported=rid=>Object.values(DB.briefings).some(b=>b.rid===rid);
-  const cliOf=rid=>{const e=Object.entries(DB.briefings).find(([,b])=>b.rid===rid);return e&&cli(e[0])};
-  const novas=resp.filter(r=>!imported(r.rid));
-  V.innerHTML=`<div class="ph"><div><h1>Importar <em>briefings</em></h1><p>Briefings do Forms · ${isDemo()?'conecte a planilha para ver as respostas':'respostas da planilha conectada'}</p></div>
-  <div class="acts"><label class="sm mut row">Data inicial <input type="date" id="di" value="${di||''}" class="btn"></label><button class="btn pri" id="ia" ${novas.length?'':'disabled style="opacity:.5"'}>Importar novas · ${novas.length}</button></div></div>
-  ${sheetCard()}
-  ${UIS.busy&&!F.length?'<div class="empty"><b>Lendo a planilha…</b>Isso leva alguns segundos.</div>':!di?'<div class="empty"><b>Defina a data inicial</b>para buscar as respostas do Forms.</div>':!resp.length?`<div class="empty"><b>Nenhuma resposta encontrada</b>${S.id&&!S.fetchedAt?'Clique em Sincronizar para ler a planilha.':'desde '+fdl(di)+'.'}</div>`:
-  `<div class="grid">${resp.map(r=>`<div class="card"><div class="row" style="flex-wrap:wrap"><div class="av" style="background:${colorOf(r.rid)};border-radius:50%">${ini(r.nome)}</div><div style="flex:1"><b>${h(r.nome)}</b><div class="sm mut">${h(r.empresa||'—')} · ${r.data?fdl(r.data):'sem data'}</div></div>${imported(r.rid)?`<a class="chipx f-Pago" href="#cliente-${cliOf(r.rid)?.id}" style="text-decoration:none"><i></i>Vinculado a ${h(cliOf(r.rid)?.nome||'cliente')}</a>`:`<span class="sm mut">${findCli(r.nome)?'cliente já cadastrado':'novo cliente'}</span><button class="btn sm pri" data-imp="${r.rid}">Importar</button>`}<button class="btn sm" data-open="${r.rid}">${UI.openRid===r.rid?'Fechar':'Abrir'}</button></div>${UI.openRid===r.rid?respostaHTML(r):''}</div>`).join('')}</div>`}
-  <p class="sm mut" style="margin-top:20px">Respostas importadas criam (ou completam) o cliente pelo nome e aparecem no detalhe dos projetos dele. <a class="link" href="#briefings">Ver todas as respostas da planilha</a></p>`;
-  $('#di').onchange=e=>{DB.config.dataForms=e.target.value;save();vImportar(V)};
-  const shf=$('#shf');if(shf)shf.onsubmit=e=>{e.preventDefault();const id=sheetId(shf.link.value);if(!id)return toast('Link de planilha inválido. Use o endereço docs.google.com/spreadsheets/d/…','err');Object.assign(S,emptySheet(),{id});save();syncSheet()};
-  $('#sync')&&($('#sync').onclick=syncSheet);
-  $('#troca')&&($('#troca').onclick=()=>modal('Trocar planilha?','<p>A conexão atual será removida. Os briefings já importados continuam vinculados aos clientes.</p>',()=>{DB.sheet=emptySheet();save();refresh()},'Trocar',{danger:true}));
-  $('#aba')&&($('#aba').onchange=e=>{S.aba=e.target.value;S.header=[];S.rows=[];S.cols=null;S.mapOk=false;save();syncSheet()});
-  $$('[data-col]',V).forEach(sl=>sl.onchange=()=>{const cols=getCols(),ix=+sl.dataset.col,v=sl.value;if(!['q','x'].includes(v))cols.forEach((k,j)=>{if(k===v&&j!==ix)cols[j]='q'});cols[ix]=v;S.mapOk=false;UI.mapOpen=true;save();vImportar(V)});
-  $('#mapauto')&&($('#mapauto').onclick=()=>{S.cols=autoCols(S.header);S.mapOk=false;UI.mapOpen=true;save();vImportar(V)});
-  $('#mapok')&&($('#mapok').onclick=()=>{if(!getCols().includes('nome'))return toast('Vincule a coluna do nome antes de confirmar','err');S.mapOk=true;UI.mapOpen=false;save();toast('Vínculo das perguntas salvo');vImportar(V)});
-  $('#mapd')&&$('#mapd').addEventListener('toggle',e=>{UI.mapOpen=e.target.open});
-  const imp=r=>{const {c}=vincularCliente(r);DB.briefings[c.id]={rid:r.rid,data:r.data||today(),r:r.r,dados:Object.fromEntries(['nome',...CLIKEYS].map(k=>[k,r[k]||'']))};return c};
-  $('#ia').onclick=()=>{novas.forEach(imp);save();toast(`${novas.length} briefing(s) importado(s)`);vImportar(V)};
-  $$('[data-imp]',V).forEach(b=>b.onclick=()=>{const r=F.find(x=>x.rid===b.dataset.imp),existia=!!findCli(r.nome),c=imp(r);save();toast(existia?`Briefing vinculado a ${c.nome}`:`Cliente ${c.nome} cadastrado com o briefing`);vImportar(V)});
-  $$('[data-open]',V).forEach(b=>b.onclick=()=>{UI.openRid=UI.openRid===b.dataset.open?null:b.dataset.open;vImportar(V)});
-  $$('[data-gen]',V).forEach(b=>b.onclick=async()=>{const r=F.find(x=>x.rid===b.dataset.gen);const prev=RS()[r.rid];const v=prev?(prev.v||0)+1:0;b.disabled=true;b.textContent='Gerando…';
-    const out=await gerarResumo(r,v);RS()[r.rid]={...out,v};save();if(out.erro==='rate_limited')toast('Muitos pedidos seguidos — usei um resumo-modelo. Tente de novo em instantes.','err');vImportar(V)});
-}
-function respostaHTML(r){
-  const res=RS()[r.rid],c=findCli(r.nome);
-  return `<div class="resp"><div class="resp-h"><b>Dados do cliente</b><span class="sm mut">${c?`já cadastrado como <a class="link" href="#cliente-${c.id}">${h(c.nome)}</a>${faltando(c,r).length?` · ${faltando(c,r).length} campo(s) a completar`:''}`:'será criado um novo cadastro ao importar'}</span></div>${dadosHTML(r,true)}
-  <div class="resp-h" style="margin-top:22px"><b>Perguntas e respostas</b><span class="sm mut">${Object.keys(r.r).length} pergunta${Object.keys(r.r).length!==1?'s':''}</span></div>${qaHTML(r.r)}</div>
-  <div class="ai"><b>✦ Resumo de identidade ${res?(res.ia?'· gerado pelo Claude':'· modelo automático'):''}</b>${res?`<p>${h(res.text)}</p>`:`<p class="sm" style="font-family:var(--sans);font-size:14px">${SAMPLE?'O Claude lê as respostas e escreve um resumo da identidade da marca.':'Abra a página no claude.ai para gerar o resumo com o Claude; aqui fora uso um resumo-modelo.'}</p>`}
-  <button class="btn sm" style="margin-top:12px" data-gen="${r.rid}">${res?'↻ Gerar de novo':'✦ Gerar resumo'}</button></div>`;
-}
-function vBriefings(V){
-  const F=getForms(),S=SH();
-  V.innerHTML=`<a class="link sm" href="#importar">← Importar briefings</a><div class="ph" style="margin-top:10px"><div><h1>Briefings</h1><p>${isDemo()?'Respostas de exemplo — conecte a planilha em Importar briefings':`Todas as respostas de <b>${h(S.titulo||'planilha conectada')}</b> · sincronizada ${agoTxt(S.fetchedAt)}`}</p></div>${S.id?`<div class="acts"><button class="btn" id="sync" ${UIS.busy?'disabled':''}>${UIS.busy?'Sincronizando…':'↻ Sincronizar'}</button></div>`:''}</div>
-  ${F.length?`<div class="card tbwrap" style="padding:6px"><table class="tb"><thead><tr><th>Data</th><th>Nome</th><th>Empresa</th><th>E-mail</th><th>Telefone</th><th>Cidade</th><th>Perguntas</th></tr></thead><tbody>${F.map(r=>`<tr class="click" data-o="${r.rid}"><td>${r.data?fdl(r.data):'—'}</td><td><b>${h(r.nome)}</b></td><td>${h(r.empresa)}</td><td>${h(r.email)}</td><td>${h(r.tel)}</td><td>${h(r.cidade)}</td><td>${Object.keys(r.r).length}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><b>Nenhuma resposta</b>Sincronize a planilha em Importar briefings.</div>'}`;
-  $('#sync')&&($('#sync').onclick=syncSheet);
-  $$('[data-o]',V).forEach(tr=>tr.onclick=()=>{UI.openRid=tr.dataset.o;go('importar')});
-}
-
-/* ---------- 10. Configurações ---------- */
-function vConfig(V){
-  const C=DB.config;
-  V.innerHTML=`<div class="ph"><div><h1>Configurações</h1></div></div>
-  <div class="grid g2" style="align-items:start">
-   <div class="card"><h3>Alertas de prazo</h3><p class="sm mut" style="margin-bottom:14px">Antecedência usada nos avisos do painel e no filtro “Próximos dias”.</p><div class="row"><input type="range" min="1" max="60" value="${C.alerta}" id="al" style="flex:1;accent-color:var(--acc)"><b id="alv" style="min-width:70px;text-align:right">${C.alerta} dia${C.alerta>1?'s':''}</b></div></div>
-   <div class="card"><h3>Aparência</h3><div class="row" style="justify-content:space-between"><span>Tema escuro <span class="sm mut">(vinho e dourado)</span></span><button class="switch ${C.tema==='dark'?'on':''}" id="tm"></button></div></div>
-   <div class="card"><h3>Dados do estúdio</h3><p class="sm mut" style="margin-bottom:14px">Apaga clientes, projetos, financeiro e pré-briefings guardados neste navegador. Os pacotes voltam ao padrão.</p><div class="row"><button class="btn danger" id="reset">Apagar todos os dados</button></div></div>
-   <div class="card"><h3>Planilhas fora do claude.ai</h3><p class="sm mut" style="margin-bottom:12px">No seu domínio, a área interna lê as planilhas pelo seu script do Google. Cole aqui o código gerado pela função <b>gerarCodigo</b> do Apps Script. Ele fica guardado só neste navegador.</p>
-    <form id="gstf" class="row" style="flex-wrap:wrap"><input name="tok" type="password" autocomplete="off" placeholder="${C.gsToken?'•••••••• (código salvo)':'Código de acesso'}" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--ln);border-radius:999px;padding:10px 16px;color:var(--txt)"><button class="btn pri">Salvar</button>${C.gsToken?'<button type="button" class="btn sm danger" id="gstx">Remover</button>':''}</form>
-    <p class="sm" style="margin-top:10px">${MCP?'<span class="chipx f-Pago"><i></i>Conector do claude.ai ativo nesta página</span>':C.gsToken?'<span class="chipx f-Pago"><i></i>Código salvo: leitura pelo script</span>':'<span class="chipx f-Pendente"><i></i>Sem código: a leitura só funciona no claude.ai</span>'}</p></div>
-   <div class="card"><h3>Planilha de briefings</h3><p class="sm">${SH().id?`Conectada: <b>${h(SH().titulo||'planilha')}</b> · sincronizada ${agoTxt(SH().fetchedAt)}`:'Nenhuma planilha conectada.'}</p><a class="btn sm" href="#importar" style="margin-top:12px">Gerenciar em Importar briefings →</a></div>
-   <div class="card"><h3>Acesso</h3><div class="row" style="justify-content:space-between"><span class="health"><i></i>Sistema funcionando</span><button class="btn" id="out">Sair do estúdio</button></div></div>
-   <div class="card"><h3>Senha de acesso</h3>
-    <form id="pwf" class="grid" style="gap:10px">
-      <div class="fld"><label>Senha atual</label><input type="password" name="atual" autocomplete="current-password" required></div>
-      <div class="fld"><label>Nova senha <span class="opt">(mínimo 8 caracteres)</span></label><input type="password" name="nova" autocomplete="new-password" minlength="8" required></div>
-      <div class="fld"><label>Repita a nova senha</label><input type="password" name="conf" autocomplete="new-password" required></div>
-      <div class="row" style="justify-content:space-between;flex-wrap:wrap"><span class="sm mut">${C.senhaHash?'Senha personalizada ativa neste navegador.':'Usando a senha padrão do site.'}</span><button class="btn pri">Alterar senha</button></div>
-    </form>
-    <div id="pwinfo"></div></div>
-  </div>
-`;
-  const al=$('#al');al.oninput=()=>{$('#alv').textContent=al.value+' dia'+(al.value>1?'s':'')};al.onchange=()=>{C.alerta=+al.value;save();toast('Antecedência salva');refresh()};
-  $('#tm').onclick=()=>{C.tema=C.tema==='dark'?'light':'dark';save();refresh()};
-  $('#out').onclick=logout;
-  $('#gstf').onsubmit=e=>{e.preventDefault();const v=e.target.tok.value.trim();if(!v)return toast('Cole o código de acesso','err');C.gsToken=v;if(DB.sheet)DB.sheet.erro=null;if(DB.preSheet)DB.preSheet.erro=null;save();toast('Código salvo');refresh()};
-  $('#gstx')&&($('#gstx').onclick=()=>{delete C.gsToken;save();toast('Código removido');refresh()});
-  $('#pwf').onsubmit=async e=>{e.preventDefault();const f=e.target;
-    let atualOk=false;try{atualOk=(await sha256(f.atual.value))===(C.senhaHash||SENHA_HASH)}catch(err){}
-    if(!atualOk)return toast('Senha atual incorreta','err');
-    if(f.nova.value.length<8)return toast('A nova senha precisa ter pelo menos 8 caracteres','err');
-    if(f.nova.value!==f.conf.value)return toast('As senhas novas não são iguais','err');
-    const hh=await sha256(f.nova.value);C.senhaHash=hh;save();f.reset();toast('Senha alterada');
-    $('#pwinfo').innerHTML=`<div class="alert" style="margin-top:14px"><span class="ico">🔑</span><div><b>Senha alterada neste navegador</b><span class="sm">Para valer também nos outros aparelhos e no site publicado, o código abaixo precisa entrar no site (é só um código embaralhado, não a senha). Copie e me envie — ou cole em <code>SENHA_HASH</code> no index.html.</span>
-      <div class="row" style="margin-top:10px;flex-wrap:wrap"><code style="font-size:12px;word-break:break-all;background:var(--panel2);padding:8px 10px;border-radius:10px;flex:1">${hh}</code><button class="btn sm" id="cphash">Copiar código</button></div></div></div>`;
-    $('#cphash').onclick=()=>navigator.clipboard?.writeText(hh).then(()=>toast('Código copiado')).catch(()=>toast('Selecione e copie manualmente','err'))};
-  $('#reset').onclick=()=>modal('Apagar todos os dados?','<p>Clientes, projetos, tarefas, financeiro, pré-briefings e briefings importados deste navegador serão apagados. A senha, o tema e as planilhas conectadas continuam. Não dá para desfazer.</p>',()=>{const keep={senhaHash:C.senhaHash,gsToken:C.gsToken,tema:C.tema,alerta:C.alerta},sh=DB.sheet,ps=DB.preSheet;DB=seed();Object.assign(DB.config,keep);if(sh)DB.sheet=sh;if(ps)DB.preSheet=ps;save();toast('Dados apagados');refresh()},'Apagar tudo',{danger:true});
-  $$('[data-up]',V).forEach(i=>i.onchange=()=>{const f=i.files[0];if(!f)return;if(f.size>8*1024*1024)return toast('Imagem acima de 8 MB','err');if(!/image\/(jpeg|png|webp|gif)/.test(f.type))return toast('Formato não suportado','err');
-    const rd=new FileReader();rd.onload=()=>{const img=new Image();img.onload=()=>{const cv=document.createElement('canvas'),w=Math.min(1200,img.width);cv.width=w;cv.height=img.height*w/img.width;cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);C.capas[i.dataset.up]=cv.toDataURL('image/jpeg',.82);save();toast('Imagem enviada');refresh()};img.src=rd.result};rd.readAsDataURL(f)});
-  $$('[data-rm]',V).forEach(b=>b.onclick=()=>{delete C.capas[b.dataset.rm];save();toast('Imagem removida');refresh()});
-}
-
-window.go=go;
 route();
+
 </script>
 </body>
 </html>

@@ -1,13 +1,12 @@
-# Maiê Design Studio — site
+# Maiê Design Studio — site público
 
-Site do Maiê Design Studio: página pública (propostas, outros serviços, pré-briefing) e área interna do estúdio (painel, projetos, tarefas, clientes, agenda, financeiro, pacotes, pré-briefings, importação de briefings e configurações).
+Site público do Maiê Design Studio: página inicial (pacotes, como funciona), outros serviços e o chat de pré-briefing ("Vamos conversar?"). A área interna do estúdio (painel, projetos, clientes, financeiro etc.) é outro site, outro repositório: **painel-maieosite**.
 
 É um site estático: um único `index.html` (HTML + CSS + JavaScript) e a pasta `img/`. Não precisa de build. Publicado automaticamente na Vercel a cada push na branch `main`.
 
 ## Rodar no computador
 
 ```bash
-# dentro da pasta do projeto
 python3 -m http.server 8000
 # abra http://localhost:8000
 ```
@@ -18,41 +17,23 @@ python3 -m http.server 8000
 |---|---|
 | `#propostas` (início) | Página pública com pacotes e como funciona |
 | `#outros-servicos` | Design de post e Landing page |
-| `#prebriefing` | Formulário "Vamos conversar?" |
-| `#entrar` | Login da área interna |
-| `#painel`, `#projetos`, `#tarefas`, `#clientes`, `#agenda`, `#financeiro`, `#pacotes`, `#prebriefings`, `#importar`, `#configuracoes` | Área interna |
+| `#prebriefing` | Abre o chat de pré-briefing (não é mais uma página própria) |
+| `#obrigada` | Página de agradecimento (usada internamente pelo chat) |
 
-## Onde editar
+## Chat de pré-briefing
 
-No topo do `<script>` em `index.html`:
+O botão flutuante 🌸 abre um chat com diálogos fixos em JavaScript (sem IA, sem API externa). Ao final, os dados são enviados por `fetch` ao Google Apps Script configurado em `PREBRIEF_ENDPOINT` (no topo do `index.html`), que grava numa planilha do Google. O código do Apps Script e as instruções de configuração ficam no repositório **painel-maieosite** (é lá que a planilha também é lida pela área interna).
 
-- `WHATS` – número do WhatsApp (formato `55DDDNÚMERO`)
-- `EMAIL` – e-mail de contato
-- `PREBRIEF_ENDPOINT` – URL do Apps Script que grava o pré-briefing na planilha
-- `SENHA_HASH` – hash SHA-256 da senha da área interna. Para trocar a senha, gere o hash da nova (ex.: `printf 'nova-senha' | shasum -a 256`) e cole aqui. Ainda é uma proteção simples, feita no navegador (veja abaixo)
-- `PKG` – textos dos pacotes Essencial, instaPRO e Premium
-- `OUTROS` – textos e etapas de Design de post e Landing page
+Esse site **não guarda nada no navegador**: nenhum dado do pré-briefing fica salvo localmente aqui — tudo vai direto para a planilha.
 
-## Importante antes de publicar no domínio
+## Pacotes exibidos no site
 
-Hoje o site é um protótipo que guarda tudo no navegador de quem usa (`localStorage`):
+O texto dos pacotes (Essencial, instaPRO, Premium) está fixo no código, na constante `PKG` perto do topo do `index.html`. Para mudar nome, descrição, entregáveis ou bônus exibidos no site público, edite ali e publique. (A tela "Pacotes" do painel interno é separada e não altera automaticamente o que aparece aqui.)
 
-1. **Pré-briefing**: o formulário envia as respostas para uma planilha do Google por um Apps Script. Siga [`google-apps-script/README.md`](google-apps-script/README.md) e preencha `PREBRIEF_ENDPOINT` no `index.html`. Sem essa URL, as respostas ficam só no navegador do visitante.
-2. **Área interna**: a senha fica visível no código e os dados não são compartilhados entre dispositivos. Para uso real, precisa de um back-end (login + banco de dados, ex.: Supabase/Firebase) — ou publique só a parte pública.
-3. **Google Sheets e resumo por IA** (Importar briefings): usam os recursos do claude.ai (`window.claude`). Fora do claude.ai, a tela usa respostas de exemplo e um resumo-modelo.
+## Link para a área do estúdio
 
-## Publicar com domínio próprio
+O link "Área do estúdio" do rodapé aponta para a constante `STUDIO_URL`, no topo do `index.html`. Hoje está como `https://studio.maiedesign.com.br/` — ajuste aí se o endereço do painel mudar.
 
-1. Suba este repositório no GitHub.
-2. Conecte o repositório a uma hospedagem estática (Netlify, Vercel, Cloudflare Pages ou GitHub Pages) — sem comando de build, pasta de publicação = raiz.
-3. Adicione o domínio no painel da hospedagem e ajuste o DNS no registrador (Registro.br etc.) conforme indicado.
+## Contato / WhatsApp
 
-## Marca
-
-Paleta vinho `#5B1531`, magenta `#AD2159`, ameixa `#7B3A5E`, rosa `#F2D8DB`, dourado `#C59A55`.
-Fontes: Instrument Serif e DM Sans (Google Fonts).
-
-
-## Pré-briefing por chat
-
-O formulário foi substituído por um chat flutuante (🌸) com diálogos fixos em JavaScript — sem LLM nem APIs externas. Ao confirmar, os dados seguem para a planilha (Apps Script) e para a tela *Pré-briefings* da área privada. Os links `#prebriefing` abrem o chat.
+`WHATS` e `EMAIL`, também no topo do `index.html`.
