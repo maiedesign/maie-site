@@ -1,61 +1,70 @@
-# Maiê Design Studio — site público
+# Maiê Design Studio
 
-Site público do Maiê Design Studio: página inicial (pacotes, como funciona), outros serviços e o chat de pré-briefing ("Vamos conversar?"). A área interna do estúdio (painel, projetos, clientes, financeiro etc.) é outro site, outro repositório: **painel-maieosite**.
+**Sua marca fala antes de você.**
 
-É um site estático: um único `index.html` (HTML + CSS + JavaScript) e a pasta `img/`. Não precisa de build. Publicado automaticamente no GitHub Pages, em **https://maiedesign.github.io/maie-site/**, a cada push na branch `main`.
+O Maiê Design Studio cria identidades visuais e materiais que fazem as pessoas entenderem o valor de um negócio no primeiro olhar. São mais de 200 marcas entregues, clientes em 6 países e mais de 8 anos de mercado.
 
-## Publicação (GitHub Pages)
+🌐 [maiedesign.com.br](https://maiedesign.com.br) · 📸 [@maiedesign](https://instagram.com/maiedesign)
 
-- O workflow `.github/workflows/pages.yml` copia `index.html`, `img/`, `CNAME` e `.nojekyll` para o Pages a cada push na `main` (dá para rodar à mão em Actions → "Deploy no GitHub Pages" → Run workflow). Ele também publica uma cópia do `index.html` como `404.html`.
-- Sem domínio próprio por enquanto. Para usar `maiedesign.com.br`, crie um arquivo `CNAME` com o domínio, inclua-o no `cp` do workflow e configure o DNS.
-- Em Settings → Pages do repositório: **Source = GitHub Actions**.
+---
 
-### DNS (no registro.br ou onde o domínio estiver)
+## Por que este site existe
 
-| Tipo | Nome | Valor |
-|---|---|---|
-| A | `@` | `185.199.108.153` |
-| A | `@` | `185.199.109.153` |
-| A | `@` | `185.199.110.153` |
-| A | `@` | `185.199.111.153` |
-| AAAA | `@` | `2606:50c0:8000::153` |
-| AAAA | `@` | `2606:50c0:8001::153` |
-| AAAA | `@` | `2606:50c0:8002::153` |
-| AAAA | `@` | `2606:50c0:8003::153` |
-| CNAME | `www` | `maiedesign.github.io` |
+Este site existe para deixar o **atendimento e o processo de criação mais leves, claros e eficientes**, tanto para quem chega quanto para o estúdio.
 
-Remova os registros antigos que apontam para a Vercel (A `76.76.21.21` / CNAME `cname.vercel-dns.com`) no mesmo domínio.
+Antes, muita coisa se resolvia em longas trocas de mensagens: o que cada pacote inclui, como o trabalho acontece, quanto tempo leva, por onde começar. Agora, essas respostas estão organizadas em um só lugar. Quando a primeira conversa acontece, a cliente já chega sabendo o que quer, e o estúdio já sabe com quem está falando.
 
-## Rodar no computador
+### O que muda na prática
 
-```bash
-python3 -m http.server 8000
-# abra http://localhost:8000
-```
+- **Escolha mais fácil.** Os pacotes são apresentados com clareza: para quem é cada um, o que está incluído e o que muda entre eles. A cliente se identifica com o momento do próprio negócio e chega mais segura na decisão.
+- **Um primeiro contato que já adianta o trabalho.** No chat **"Vamos conversar?"**, a cliente responde, em cerca de 3 minutos, um pré-briefing com informações sobre ela, o negócio, o que procura e a faixa de investimento. O estúdio recebe tudo organizado e pode indicar o caminho certo logo na primeira resposta, sem idas e vindas.
+- **Processo transparente.** As etapas ficam visíveis desde o início, e a cliente acompanha cada passo sabendo o que vem a seguir.
+- **Menos tempo explicando, mais tempo criando.** Com as dúvidas frequentes já respondidas, o tempo do estúdio vai para o que importa: entender a marca e desenhar.
 
-## Páginas (rotas por #)
+---
 
-| Rota | Página |
+## Como funciona
+
+| Etapa | O que acontece |
 |---|---|
-| `#propostas` (início) | Página pública com pacotes e como funciona |
-| `#outros-servicos` | Design de post e Landing page |
-| `#prebriefing` | Abre o chat de pré-briefing (não é mais uma página própria) |
-| `#obrigada` | Página de agradecimento (usada internamente pelo chat) |
+| **01 · Pré-briefing** | A cliente conta sobre o negócio no chat "Vamos conversar?". |
+| **02 · Proposta** | O estúdio indica o pacote ideal e alinha escopo, prazos e investimento. |
+| **03 · Imersão** | Briefing completo, pesquisa e conceito: entender antes de desenhar. |
+| **04 · Criação** | Desenvolvimento da marca e apresentação. |
+| **05 · Ajustes e entrega** | Os detalhes são refinados em conjunto, e a cliente recebe tudo organizado e pronto para usar. |
 
-## Chat de pré-briefing
+São **15 dias úteis** do briefing à apresentação da marca.
 
-O botão flutuante 🌸 abre um chat com diálogos fixos em JavaScript (sem IA, sem API externa). Ao final, os dados são enviados por `fetch` ao Google Apps Script configurado em `PREBRIEF_ENDPOINT` (no topo do `index.html`), que grava numa planilha do Google. O código do Apps Script e as instruções de configuração ficam no repositório **painel-maieosite** (é lá que a planilha também é lida pela área interna).
+---
 
-Esse site **não guarda nada no navegador**: nenhum dado do pré-briefing fica salvo localmente aqui — tudo vai direto para a planilha.
+## Pacotes de identidade visual
 
-## Pacotes exibidos no site
+Todos os pacotes trazem a identidade visual completa: logotipo e variações, paleta de cores, tipografia, pattern (a estampa da marca), marca d'água e ícones para redes sociais. Também acompanha o **Certificado Anti-plágio**, um documento com validade legal que atesta a autoria e a propriedade da obra. O que muda entre eles é a quantidade de materiais gráficos.
 
-O texto dos pacotes (Essencial, instaPRO, Premium) está fixo no código, na constante `PKG` perto do topo do `index.html`. Para mudar nome, descrição, entregáveis ou bônus exibidos no site público, edite ali e publique. (A tela "Pacotes" do painel interno é separada e não altera automaticamente o que aparece aqui.)
+| Pacote | Para quem é | Materiais gráficos |
+|---|---|---|
+| **Essencial** | Profissionais autônomos e pequenos negócios que precisam organizar a marca e transmitir mais confiança. | 1 |
+| **instaPRO** | Quem usa o Instagram para apresentar e vender e precisa de uma presença visual consistente. | 2 |
+| **Premium** | Marcas em crescimento que precisam de um sistema visual completo para diferentes pontos de contato. | 6 |
 
-## Link para a área do estúdio
+## Outros serviços
 
-O link "Área do estúdio" do rodapé aponta para a constante `STUDIO_URL`, no topo do `index.html`. Hoje está como `https://studio.maiedesign.com.br/` — ajuste aí se o endereço do painel mudar.
+- **Design de post:** posts para feed, stories e carrossel criados a partir da identidade da marca, para que o perfil comunique com consistência e profissionalismo.
+- **Landing page:** uma página com a cara da marca, pensada para apresentar um serviço ou produto e transformar visitantes em contatos.
 
-## Contato / WhatsApp
+---
 
-`WHATS` e `EMAIL`, também no topo do `index.html`.
+## Para quem é
+
+Para quem já se viu pensando:
+
+- *"Meu negócio cresceu, a marca não."*
+- *"Cada post parece de uma marca diferente."*
+- *"Tenho vergonha de mandar meu perfil."*
+- *"Cobro pouco porque pareço pequena."*
+
+Uma marca bem construída abre portas antes mesmo da primeira conversa. Este site existe para que essa primeira conversa já comece no lugar certo.
+
+---
+
+© Maiê Design Studio. Todos os direitos reservados.
