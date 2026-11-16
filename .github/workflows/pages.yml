@@ -26,7 +26,7 @@ jobs:
       - name: Monta a pasta do site
         run: |
           mkdir _site
-          cp -R index.html img CNAME .nojekyll _site/
+          cp -R index.html img .nojekyll _site/
           cp index.html _site/404.html
 
       - uses: actions/configure-pages@v5
