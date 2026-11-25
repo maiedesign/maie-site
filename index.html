@@ -82,7 +82,7 @@ em{font-style:italic}
 .marquee{border-top:1px solid rgba(255,255,255,.22);background:var(--vinho);overflow:hidden;white-space:nowrap;padding:16px 0}
 .marquee div{display:inline-flex;gap:40px;animation:mq 38s linear infinite;font-family:var(--serif);font-size:28px;font-style:italic}
 .marquee div span{display:inline-flex;align-items:center;gap:40px}
-.marquee div span::after{content:"✦";font-style:normal;font-size:16px;color:var(--dourado)}
+.marquee div span span::after{content:"✦";font-style:normal;font-size:16px;color:var(--dourado)}
 @keyframes mq{to{transform:translateX(-50%)}}
 
 section.blk{padding:clamp(70px,10vw,140px) clamp(18px,4vw,56px)}
@@ -648,14 +648,14 @@ function renderPublic(){
   const svc=['Design de post','Identidade Visual','Landing page'];
   $('#root').innerHTML=`<div class="pub">${pubNav()}
 <section class="hero" id="top">
-  <div class="badge" aria-hidden="true"><svg viewBox="0 0 200 200"><defs><path id="cp" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs><text font-family="DM Sans" font-size="15.5" letter-spacing="4.2" fill="#AD2159"><textPath href="#cp">・MAIÊ DESIGN STUDIO ・ MAIÊ DESIGN STUDIO</textPath></text></svg><img src="${IMG.sub}" alt=""></div>
+  <div class="badge" aria-hidden="true"><svg viewBox="0 0 200 200"><defs><path id="cp" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs><text font-family="DM Sans" font-size="14.2" letter-spacing="4.1" fill="#AD2159"><textPath href="#cp">・ MAIÊ DESIGN STUDIO ・ MAIÊ DESIGN STUDIO</textPath></text></svg><img src="${IMG.sub}" alt=""></div>
   <span class="eyebrow">Estúdio de design</span>
   <div class="hero-top">
     <h1><span class="ln"><span>Sua marca fala</span></span><span class="ln"><span><em>antes</em> de você.</span></span></h1>
     <div class="hero-side"><p>O <b>design</b> faz as pessoas entenderem o valor da sua marca no primeiro olhar.</p>
     <div class="btns"><button class="pill primary" data-scroll="pacotes">Ver pacotes <span class="arr">→</span></button><button class="pill ghost" data-scroll="como">Como funciona</button></div></div>
   </div>
-  <div class="hero-img"><img id="heroimg" src="${IMG.port}" alt="Mosaico de projetos do Maiê Studio: Arché Psi, Azo, Authentic e outras marcas"><span class="tag"><span class="dot"></span>Projetos recentes do estúdio</span></div>
+  <div class="hero-img"><img id="heroimg" src="${IMG.port}" alt="Mosaico de projetos do Maiê Studio: Arché Psi, Azo, Authentic e outras marcas"></div>
 </section>
 <div class="band">
   <div class="band-stats">
